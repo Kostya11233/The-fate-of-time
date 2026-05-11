@@ -1,0 +1,44 @@
+package com.mygdx.game;
+
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
+public class Button {
+    BitmapFont font;
+    Texture texture;
+    String text;
+    int x, y;
+    int textX, textY;
+    int buttonWidth, buttonHeight;
+    int textWidth, textHeight;
+    public Button(int x, int y, int buttonWidth, int buttonHeight, String text) {
+        this.x = x;
+        this.y = y;
+        font = new BitmapFont();
+        font.getData().scale(1f);
+        font.setColor(Color.GOLD);
+        textWidth = 200;
+        textHeight = 67;
+        textX = x + (buttonWidth - textWidth) / 2;
+        textY = y + (buttonHeight + textHeight) / 2;
+        this.buttonWidth = 267;
+        this.buttonHeight = 120;
+        this.text = text;
+    }
+
+    public void draw(SpriteBatch batch) {
+        batch.draw(texture, x, y, buttonWidth, buttonHeight);
+        font.draw(batch, text, textX, textY);
+    }
+
+    public void dispose() {
+        texture.dispose();
+        font.dispose();
+    }
+
+    public boolean isHit(int tx, int ty) {
+        return tx >= x && tx <= x + buttonWidth && ty >= y && ty <= y + buttonHeight;
+    }
+}
