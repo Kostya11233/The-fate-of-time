@@ -1,24 +1,35 @@
 package com.mygdx.game;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
 
-public class TheFateGame extends ApplicationAdapter {
+public class TheFateGame extends Game {
 	public SpriteBatch batch;
 	public OrthographicCamera camera;
-	public static final int SCREEN_WIDTH = 1280;
-	public static final int SCREEN_HEIGHT = 720;
-	public MenuScreen menuScreen;
+	public static int SCREEN_WIDTH;
+	public static int SCREEN_HEIGHT;
+
 	@Override
 	public void create() {
 		batch = new SpriteBatch();
+
+		// Получаем реальные размеры экрана
+		SCREEN_WIDTH = Gdx.graphics.getWidth();
+		SCREEN_HEIGHT = Gdx.graphics.getHeight();
+
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
-		menuScreen = new MenuScreen(this);
-		setScreen(menuScreen);
+		setScreen(new StartMenuScreen(this));
+	}
+
+	@Override
+	public void resize(int width, int height) {
+		// Обновляем размеры при изменении окна
+		SCREEN_WIDTH = width;
+		SCREEN_HEIGHT = height;
+		camera.setToOrtho(false, width, height);
 	}
 
 	@Override

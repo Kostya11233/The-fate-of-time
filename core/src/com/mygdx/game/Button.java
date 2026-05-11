@@ -21,6 +21,7 @@ public class Button {
         font.setColor(Color.GOLD);
         textWidth = 200;
         textHeight = 67;
+        texture = new Texture("badlogic.jpg");
         textX = x + (buttonWidth - textWidth) / 2;
         textY = y + (buttonHeight + textHeight) / 2;
         this.buttonWidth = 267;
