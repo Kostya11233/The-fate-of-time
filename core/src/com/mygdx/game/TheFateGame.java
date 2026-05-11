@@ -15,7 +15,7 @@ public class TheFateGame extends Game {
 	public void create() {
 		batch = new SpriteBatch();
 
-		// Получаем реальные размеры экрана
+
 		SCREEN_WIDTH = Gdx.graphics.getWidth();
 		SCREEN_HEIGHT = Gdx.graphics.getHeight();
 
@@ -26,7 +26,7 @@ public class TheFateGame extends Game {
 
 	@Override
 	public void resize(int width, int height) {
-		// Обновляем размеры при изменении окна
+
 		SCREEN_WIDTH = width;
 		SCREEN_HEIGHT = height;
 		camera.setToOrtho(false, width, height);

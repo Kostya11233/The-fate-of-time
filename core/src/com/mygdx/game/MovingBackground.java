@@ -13,7 +13,7 @@ public class MovingBackground {
     }
 
     public void draw(Batch batch, OrthographicCamera camera) {
-        // Растягиваем фон на весь размер камеры
+
         float width = camera.viewportWidth;
         float height = camera.viewportHeight;
         batch.draw(texture, 0, 0, width, height);

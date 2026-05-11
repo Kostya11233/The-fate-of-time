@@ -17,13 +17,13 @@ public class StartMenuScreen implements Screen {
     private Stage stage;
     private MovingBackground background;
 
-    // Кнопки
+
     private ImageButton startBtn;
     private ImageButton settingsBtn;
     private ImageButton socBtn;
     private ImageButton exitBtn;
 
-    // Текстуры кнопок
+
     private Texture startTex;
     private Texture settingsTex;
     private Texture socTex;
@@ -32,7 +32,7 @@ public class StartMenuScreen implements Screen {
     public StartMenuScreen(TheFateGame game) {
         this.game = game;
 
-        // Используем ExtendViewport — он растягивается без искажений, но без чёрных полос
+
         this.stage = new Stage(new ExtendViewport(1280, 720));
         Gdx.input.setInputProcessor(stage);
 
@@ -49,17 +49,16 @@ public class StartMenuScreen implements Screen {
     }
 
     private void createButtons() {
-        // Получаем размеры сцены (а не экрана)
+
         float w = stage.getViewport().getWorldWidth();
         float h = stage.getViewport().getWorldHeight();
 
         float btnWidth = 267f;
         float btnHeight = 90f;
         float startX = 67f;
-        float startY = h - 140f;  // отступ сверху
+        float startY = h - 140f;
         float stepY = 110f;
 
-        // СТАРТ
         startBtn = new ImageButton(new TextureRegionDrawable(startTex));
         startBtn.setPosition(startX, startY);
         startBtn.setSize(btnWidth, btnHeight);
@@ -70,7 +69,7 @@ public class StartMenuScreen implements Screen {
             }
         });
 
-        // НАСТРОЙКИ
+
         settingsBtn = new ImageButton(new TextureRegionDrawable(settingsTex));
         settingsBtn.setPosition(startX, startY - stepY);
         settingsBtn.setSize(btnWidth, btnHeight);
@@ -81,7 +80,6 @@ public class StartMenuScreen implements Screen {
             }
         });
 
-        // СОЦСЕТИ
         socBtn = new ImageButton(new TextureRegionDrawable(socTex));
         socBtn.setPosition(startX, startY - stepY * 2);
         socBtn.setSize(btnWidth, btnHeight);
@@ -92,7 +90,7 @@ public class StartMenuScreen implements Screen {
             }
         });
 
-        // ВЫХОД
+
         exitBtn = new ImageButton(new TextureRegionDrawable(exitTex));
         exitBtn.setPosition(startX, startY - stepY * 3);
         exitBtn.setSize(btnWidth, btnHeight);
@@ -114,16 +112,16 @@ public class StartMenuScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Обновляем камеру игры
+
         game.camera.update();
         game.batch.setProjectionMatrix(game.camera.combined);
 
-        // Рисуем фон (на весь экран)
+
         game.batch.begin();
         background.draw(game.batch, game.camera);
         game.batch.end();
 
-        // Рисуем кнопки
+
         stage.act(delta);
         stage.draw();
     }
