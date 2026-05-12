@@ -13,6 +13,7 @@ public class TheFateGame extends Game {
     public SpriteBatch batch;
     public OrthographicCamera camera;
     public BitmapFont font;
+    public BitmapFont titleFont; // Добавляем отдельный шрифт для заголовка
     public Music menuMusic;
     public static int SCREEN_WIDTH;
     public static int SCREEN_HEIGHT;
@@ -28,8 +29,8 @@ public class TheFateGame extends Game {
     public void create() {
         batch = new SpriteBatch();
 
-        // Загружаем русский шрифт
-        loadRussianFont();
+        // Загружаем шрифты
+        loadFonts();
 
         // Инициализируем менеджер языка
         languageManager = LanguageManager.getInstance();
@@ -39,7 +40,6 @@ public class TheFateGame extends Game {
         volume = prefs.getFloat("volume", 0.7f);
         musicEnabled = prefs.getBoolean("musicEnabled", true);
 
-        // Проверяем первый ли это запуск
         isFirstLaunch = prefs.getBoolean("firstLaunch", true);
 
         // Загружаем музыку
@@ -60,22 +60,30 @@ public class TheFateGame extends Game {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-        // Сначала показываем заставку
         setScreen(new SplashScreen(this));
     }
 
-    private void loadRussianFont() {
+    private void loadFonts() {
         try {
+            // Основной шрифт
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
             FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
             parameter.size = 30;
             parameter.characters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789][_!@#$%^&*()_+=-.,/\\|`~:;?\"'";
             font = generator.generateFont(parameter);
+
+            // Шрифт для заголовка (побольше и покрасивее)
+            FreeTypeFontGenerator.FreeTypeFontParameter titleParam = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            titleParam.size = 52;
+            titleParam.characters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789][_!@#$%^&*()_+=-.,/\\|`~:;?\"'";
+            titleFont = generator.generateFont(titleParam);
+
             generator.dispose();
-            System.out.println("Русский шрифт загружен!");
+            System.out.println("Шрифты загружены!");
         } catch (Exception e) {
-            System.out.println("Ошибка загрузки шрифта: " + e.getMessage());
+            System.out.println("Ошибка загрузки шрифтов: " + e.getMessage());
             font = new BitmapFont();
+            titleFont = new BitmapFont();
         }
     }
 
@@ -106,6 +114,7 @@ public class TheFateGame extends Game {
     public void dispose() {
         batch.dispose();
         font.dispose();
+        titleFont.dispose();
         if (menuMusic != null) {
             menuMusic.dispose();
         }

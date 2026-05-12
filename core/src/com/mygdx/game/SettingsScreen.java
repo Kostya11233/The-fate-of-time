@@ -3,13 +3,13 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class SettingsScreen implements Screen {
@@ -26,10 +26,10 @@ public class SettingsScreen implements Screen {
     private TextButton resetBtn;
     private TextButton backBtn;
 
-    // Кнопки для громкости
     private TextButton volumeMinusBtn;
     private TextButton volumePlusBtn;
     private Table volumeTable;
+    private Label volumeValueLabel;
 
     public SettingsScreen(TheFateGame game, StartMenuScreen menuScreen) {
         this.game = game;
@@ -43,7 +43,6 @@ public class SettingsScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        // Стили
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
 
@@ -54,20 +53,25 @@ public class SettingsScreen implements Screen {
         titleLabel = new Label(game.languageManager.getText("settings"), labelStyle);
         titleLabel.setFontScale(2f);
 
-        // Громкость - заголовок
+        // Громкость
         volumeLabel = new Label(game.languageManager.getText("volume") + ":", labelStyle);
 
-        // Текущее значение громкости
-        final Label volumeValueLabel = new Label((int)(game.volume * 100) + "%", labelStyle);
+        // Текущее значение громкости (округленное до 10)
+        int currentVolume = Math.round(game.volume * 100);
+        currentVolume = Math.round(currentVolume / 10.0f) * 10; // Округляем до 10
+        volumeValueLabel = new Label(currentVolume + "%", labelStyle);
         volumeValueLabel.setFontScale(1.5f);
 
-        // Кнопка МИНУС
+        // Кнопка МИНУС (уменьшает на 10%)
         volumeMinusBtn = new TextButton("-", buttonStyle);
         volumeMinusBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.volume = Math.max(0, game.volume - 0.1f);
-                volumeValueLabel.setText((int)(game.volume * 100) + "%");
+                int current = Math.round(game.volume * 100);
+                current = Math.round(current / 10.0f) * 10;
+                int newVolume = Math.max(0, current - 10);
+                game.volume = newVolume / 100f;
+                volumeValueLabel.setText(newVolume + "%");
                 if (game.menuMusic != null && game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
@@ -75,13 +79,16 @@ public class SettingsScreen implements Screen {
             }
         });
 
-        // Кнопка ПЛЮС
+        // Кнопка ПЛЮС (увеличивает на 10%)
         volumePlusBtn = new TextButton("+", buttonStyle);
         volumePlusBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.volume = Math.min(1, game.volume + 0.1f);
-                volumeValueLabel.setText((int)(game.volume * 100) + "%");
+                int current = Math.round(game.volume * 100);
+                current = Math.round(current / 10.0f) * 10;
+                int newVolume = Math.min(100, current + 10);
+                game.volume = newVolume / 100f;
+                volumeValueLabel.setText(newVolume + "%");
                 if (game.menuMusic != null && game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
@@ -91,8 +98,8 @@ public class SettingsScreen implements Screen {
 
         // Таблица для громкости
         volumeTable = new Table();
-        volumeTable.add(volumeMinusBtn).width(60).height(50).padRight(20);
-        volumeTable.add(volumeValueLabel).padRight(20);
+        volumeTable.add(volumeMinusBtn).width(60).height(50).padRight(30);
+        volumeTable.add(volumeValueLabel).padRight(30);
         volumeTable.add(volumePlusBtn).width(60).height(50);
 
         // Кнопка включения/выключения музыки
@@ -120,7 +127,6 @@ public class SettingsScreen implements Screen {
         // Выбор языка
         languageLabel = new Label(game.languageManager.getText("language") + ":", labelStyle);
 
-        // Кнопка Русский
         languageRuBtn = new TextButton(game.languageManager.getText("russian"), buttonStyle);
         languageRuBtn.addListener(new ChangeListener() {
             @Override
@@ -133,7 +139,6 @@ public class SettingsScreen implements Screen {
             }
         });
 
-        // Кнопка Английский
         languageEnBtn = new TextButton(game.languageManager.getText("english"), buttonStyle);
         languageEnBtn.addListener(new ChangeListener() {
             @Override
@@ -146,7 +151,6 @@ public class SettingsScreen implements Screen {
             }
         });
 
-        // Таблица для кнопок языка
         Table languageTable = new Table();
         languageTable.add(languageRuBtn).width(160).height(50).padRight(60);
         languageTable.add(languageEnBtn).width(160).height(50);
@@ -158,7 +162,7 @@ public class SettingsScreen implements Screen {
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.volume = 0.7f;
                 game.musicEnabled = true;
-                volumeValueLabel.setText((int)(game.volume * 100) + "%");
+                volumeValueLabel.setText("70%");
                 soundToggle.setText(game.languageManager.getText("music") + ": " + game.languageManager.getText("on"));
                 if (game.menuMusic != null) {
                     game.menuMusic.setVolume(game.volume);
@@ -179,7 +183,6 @@ public class SettingsScreen implements Screen {
             }
         });
 
-        // Собираем всё в таблицу
         table.add(titleLabel).padBottom(50).row();
         table.add(volumeLabel).padBottom(15).row();
         table.add(volumeTable).padBottom(30).row();

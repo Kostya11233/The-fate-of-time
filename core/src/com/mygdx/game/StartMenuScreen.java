@@ -4,14 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 
 public class StartMenuScreen implements Screen {
     private final TheFateGame game;
@@ -19,7 +19,7 @@ public class StartMenuScreen implements Screen {
     private MovingBackground background;
 
     private Texture buttonTexture;
-    private Texture doshirakTexture; // Добавляем текстуру для главного объекта
+    private Texture doshirakTexture;
     private Image doshirakImage;
 
     private TextButton startBtn;
@@ -29,10 +29,13 @@ public class StartMenuScreen implements Screen {
 
     private TextButton.TextButtonStyle buttonStyle;
 
+    private GlyphLayout glyphLayout;
+
     public StartMenuScreen(TheFateGame game) {
         this.game = game;
         this.stage = new Stage(new ExtendViewport(1280, 720));
         background = new MovingBackground();
+        glyphLayout = new GlyphLayout();
 
         loadTextures();
         createStyles();
@@ -50,12 +53,10 @@ public class StartMenuScreen implements Screen {
             pixmap.dispose();
         }
 
-        // Загружаем изображение доширака
         try {
             doshirakTexture = new Texture("doshirak.png");
         } catch (Exception e) {
             System.out.println("Файл doshirak.png не найден");
-            // Создаем заглушку
             com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(100, 100, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
             pixmap.setColor(0.8f, 0.5f, 0.2f, 1);
             pixmap.fill();
@@ -77,16 +78,16 @@ public class StartMenuScreen implements Screen {
         float w = stage.getViewport().getWorldWidth();
         float h = stage.getViewport().getWorldHeight();
 
+        // Кнопки
         float btnWidth = 300f;
         float btnHeight = 65f;
         float centerX = (w - btnWidth) / 2;
 
-        // Центр экрана для изображения
-        float imageSize = 150f;
-        float imageY = h / 2;
+        // Доширак - ЕЩЕ БОЛЬШЕ И ЕЩЕ ВЫШЕ
+        float imageSize = 260f;  // Было 200f - увеличили до 260
+        float imageY = h / 2 + 70;  // Подняли еще выше (было +40)
 
-        // Кнопки располагаем ниже изображения
-        float startY = imageY - imageSize/2 - 50;
+        float startY = imageY - imageSize/2 - 75;  // Кнопки еще ниже
         float stepY = 80f;
 
         // Изображение в центре
@@ -161,10 +162,44 @@ public class StartMenuScreen implements Screen {
 
         game.batch.begin();
         background.draw(game.batch, game.camera, delta);
+
+        // Рисуем заголовок
+        drawTitle();
+
         game.batch.end();
 
         stage.act(delta);
         stage.draw();
+    }
+
+    private void drawTitle() {
+        String title = "THE FATE OF TIME";
+        float w = Gdx.graphics.getWidth();
+        float h = Gdx.graphics.getHeight();
+
+        // Настройка шрифта
+        game.titleFont.getData().setScale(0.65f);
+
+        // Получаем ширину текста
+        glyphLayout.setText(game.titleFont, title);
+        float titleWidth = glyphLayout.width;
+        float titleX = (w - titleWidth) / 2;
+        float titleY = h - 65;
+
+        // Рисуем тень
+        game.titleFont.setColor(0, 0, 0, 0.5f);
+        game.titleFont.draw(game.batch, title, titleX + 2, titleY - 2);
+
+        // Рисуем золотой текст
+        game.titleFont.setColor(1, 0.85f, 0.3f, 1);
+        game.titleFont.draw(game.batch, title, titleX, titleY);
+
+        // Эффект свечения
+        game.titleFont.setColor(1, 0.95f, 0.6f, 0.3f);
+        game.titleFont.draw(game.batch, title, titleX - 1, titleY + 1);
+
+        // Возвращаем стандартный цвет
+        game.titleFont.setColor(1, 1, 1, 1);
     }
 
     @Override
@@ -172,7 +207,6 @@ public class StartMenuScreen implements Screen {
         stage.getViewport().update(width, height, true);
         game.resize(width, height);
 
-        // Пересоздаем UI
         stage.clear();
         createUI();
     }
