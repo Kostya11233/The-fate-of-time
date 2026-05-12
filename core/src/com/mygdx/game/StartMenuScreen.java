@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
@@ -19,16 +18,15 @@ public class StartMenuScreen implements Screen {
     private Stage stage;
     private MovingBackground background;
 
-    // Фоновая текстура для кнопок
     private Texture buttonTexture;
+    private Texture doshirakTexture; // Добавляем текстуру для главного объекта
+    private Image doshirakImage;
 
-    // Кнопки
     private TextButton startBtn;
     private TextButton settingsBtn;
     private TextButton socBtn;
     private TextButton exitBtn;
 
-    // Стили
     private TextButton.TextButtonStyle buttonStyle;
 
     public StartMenuScreen(TheFateGame game) {
@@ -36,28 +34,38 @@ public class StartMenuScreen implements Screen {
         this.stage = new Stage(new ExtendViewport(1280, 720));
         background = new MovingBackground();
 
-        // Загружаем текстуру кнопки
         loadTextures();
         createStyles();
-        createButtons();
+        createUI();
     }
 
     private void loadTextures() {
         try {
             buttonTexture = new Texture("button.png");
         } catch (Exception e) {
-            System.out.println("Файл button.png не найден, создаю заглушку");
-            // Создаем простую белую текстуру как заглушку
             com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
             pixmap.setColor(0.3f, 0.3f, 0.5f, 1);
             pixmap.fill();
             buttonTexture = new Texture(pixmap);
             pixmap.dispose();
         }
+
+        // Загружаем изображение доширака
+        try {
+            doshirakTexture = new Texture("doshirak.png");
+        } catch (Exception e) {
+            System.out.println("Файл doshirak.png не найден");
+            // Создаем заглушку
+            com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(100, 100, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+            pixmap.setColor(0.8f, 0.5f, 0.2f, 1);
+            pixmap.fill();
+            doshirakTexture = new Texture(pixmap);
+            pixmap.dispose();
+        }
+        doshirakImage = new Image(doshirakTexture);
     }
 
     private void createStyles() {
-        // Стиль для кнопок с фоновой текстурой
         buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
         buttonStyle.up = new TextureRegionDrawable(buttonTexture);
@@ -65,15 +73,26 @@ public class StartMenuScreen implements Screen {
         buttonStyle.over = new TextureRegionDrawable(buttonTexture);
     }
 
-    private void createButtons() {
+    private void createUI() {
         float w = stage.getViewport().getWorldWidth();
         float h = stage.getViewport().getWorldHeight();
 
-        float btnWidth = 350f;
-        float btnHeight = 80f;
+        float btnWidth = 300f;
+        float btnHeight = 65f;
         float centerX = (w - btnWidth) / 2;
-        float startY = h - 180f;
-        float stepY = 110f;
+
+        // Центр экрана для изображения
+        float imageSize = 150f;
+        float imageY = h / 2;
+
+        // Кнопки располагаем ниже изображения
+        float startY = imageY - imageSize/2 - 50;
+        float stepY = 80f;
+
+        // Изображение в центре
+        doshirakImage.setSize(imageSize, imageSize);
+        doshirakImage.setPosition((w - imageSize) / 2, imageY - imageSize/2);
+        stage.addActor(doshirakImage);
 
         // Кнопка СТАРТ
         startBtn = new TextButton(game.languageManager.getText("start"), buttonStyle);
@@ -125,12 +144,11 @@ public class StartMenuScreen implements Screen {
         stage.addActor(exitBtn);
     }
 
-    void refreshButtonTexts() {
-        // Обновляем текст на кнопках при смене языка
-        startBtn.setText(game.languageManager.getText("start"));
-        settingsBtn.setText(game.languageManager.getText("settings"));
-        socBtn.setText(game.languageManager.getText("social"));
-        exitBtn.setText(game.languageManager.getText("exit"));
+    public void refreshButtonTexts() {
+        if (startBtn != null) startBtn.setText(game.languageManager.getText("start"));
+        if (settingsBtn != null) settingsBtn.setText(game.languageManager.getText("settings"));
+        if (socBtn != null) socBtn.setText(game.languageManager.getText("social"));
+        if (exitBtn != null) exitBtn.setText(game.languageManager.getText("exit"));
     }
 
     @Override
@@ -154,24 +172,23 @@ public class StartMenuScreen implements Screen {
         stage.getViewport().update(width, height, true);
         game.resize(width, height);
 
-        // Пересоздаем кнопки при изменении размера экрана
+        // Пересоздаем UI
         stage.clear();
-        createButtons();
+        createUI();
     }
 
     @Override
     public void dispose() {
         stage.dispose();
         background.dispose();
-        if (buttonTexture != null) {
-            buttonTexture.dispose();
-        }
+        if (buttonTexture != null) buttonTexture.dispose();
+        if (doshirakTexture != null) doshirakTexture.dispose();
     }
 
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
-        refreshButtonTexts(); // Обновляем текст при показе
+        refreshButtonTexts();
         if (game.menuMusic != null && game.musicEnabled && !game.menuMusic.isPlaying()) {
             game.menuMusic.play();
             game.menuMusic.setVolume(game.volume);
