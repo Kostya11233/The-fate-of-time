@@ -3,14 +3,12 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class SettingsScreen implements Screen {
@@ -18,15 +16,20 @@ public class SettingsScreen implements Screen {
     private final StartMenuScreen menuScreen;
     private Stage stage;
 
+    private Label titleLabel;
     private Label volumeLabel;
+    private Label languageLabel;
     private Slider volumeSlider;
-    private TextButton musicToggleBtn;
+    private TextButton soundToggle;
+    private TextButton languageRuBtn;
+    private TextButton languageEnBtn;
+    private TextButton resetBtn;
+    private TextButton backBtn;
 
     public SettingsScreen(TheFateGame game, StartMenuScreen menuScreen) {
         this.game = game;
         this.menuScreen = menuScreen;
         this.stage = new Stage(new ExtendViewport(1280, 720));
-        Gdx.input.setInputProcessor(stage);
         createUI();
     }
 
@@ -35,12 +38,19 @@ public class SettingsScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
+        // Стили
+        Label.LabelStyle labelStyle = new Label.LabelStyle();
+        labelStyle.font = game.font;
+
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
+        buttonStyle.font = game.font;
+
         // Заголовок
-        Label titleLabel = new Label("SETTINGS", new Label.LabelStyle(game.font, null));
+        titleLabel = new Label(game.languageManager.getText("settings"), labelStyle);
         titleLabel.setFontScale(2f);
 
-        // Ползунок громкости
-        volumeLabel = new Label("Volume: " + (int)(game.volume * 100) + "%", new Label.LabelStyle(game.font, null));
+        // Громкость
+        volumeLabel = new Label(game.languageManager.getText("volume") + ": " + (int)(game.volume * 100) + "%", labelStyle);
 
         volumeSlider = new Slider(0f, 1f, 0.01f, false, new Slider.SliderStyle());
         volumeSlider.setValue(game.volume);
@@ -48,7 +58,7 @@ public class SettingsScreen implements Screen {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.volume = volumeSlider.getValue();
-                volumeLabel.setText("Volume: " + (int)(game.volume * 100) + "%");
+                volumeLabel.setText(game.languageManager.getText("volume") + ": " + (int)(game.volume * 100) + "%");
                 if (game.menuMusic != null && game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
@@ -57,13 +67,15 @@ public class SettingsScreen implements Screen {
         });
 
         // Кнопка включения/выключения музыки
-        String musicText = game.musicEnabled ? "Music: ON" : "Music: OFF";
-        musicToggleBtn = new TextButton(musicText, new TextButton.TextButtonStyle());
-        musicToggleBtn.addListener(new ChangeListener() {
+        String soundText = game.languageManager.getText("music") + ": " +
+                (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off"));
+        soundToggle = new TextButton(soundText, buttonStyle);
+        soundToggle.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.musicEnabled = !game.musicEnabled;
-                musicToggleBtn.setText(game.musicEnabled ? "Music: ON" : "Music: OFF");
+                soundToggle.setText(game.languageManager.getText("music") + ": " +
+                        (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
                 if (game.menuMusic != null) {
                     if (game.musicEnabled) {
                         game.menuMusic.play();
@@ -76,16 +88,50 @@ public class SettingsScreen implements Screen {
             }
         });
 
+        // Выбор языка
+        languageLabel = new Label(game.languageManager.getText("language") + ":", labelStyle);
+
+        // Кнопка Русский
+        languageRuBtn = new TextButton(game.languageManager.getText("russian"), buttonStyle);
+        languageRuBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                game.languageManager.setLanguage(LanguageManager.RUSSIAN);
+                refreshUI();
+                if (menuScreen != null) {
+                    menuScreen.refreshButtonTexts();
+                }
+            }
+        });
+
+        // Кнопка Английский
+        languageEnBtn = new TextButton(game.languageManager.getText("english"), buttonStyle);
+        languageEnBtn.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                game.languageManager.setLanguage(LanguageManager.ENGLISH);
+                refreshUI();
+                if (menuScreen != null) {
+                    menuScreen.refreshButtonTexts();
+                }
+            }
+        });
+
+        // Таблица для кнопок языка с БОЛЬШИМИ ОТСТУПАМИ
+        Table languageTable = new Table();
+        languageTable.add(languageRuBtn).width(160).height(50).padRight(60); // Отступ 60px
+        languageTable.add(languageEnBtn).width(160).height(50);
+
         // Кнопка сброса
-        TextButton resetBtn = new TextButton("Reset", new TextButton.TextButtonStyle());
+        resetBtn = new TextButton(game.languageManager.getText("reset_settings"), buttonStyle);
         resetBtn.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.volume = 0.7f;
                 game.musicEnabled = true;
                 volumeSlider.setValue(game.volume);
-                volumeLabel.setText("Volume: 70%");
-                musicToggleBtn.setText("Music: ON");
+                volumeLabel.setText(game.languageManager.getText("volume") + ": 70%");
+                soundToggle.setText(game.languageManager.getText("music") + ": " + game.languageManager.getText("on"));
                 if (game.menuMusic != null) {
                     game.menuMusic.setVolume(game.volume);
                     if (game.musicEnabled) {
@@ -97,7 +143,7 @@ public class SettingsScreen implements Screen {
         });
 
         // Кнопка назад
-        TextButton backBtn = new TextButton("BACK", new TextButton.TextButtonStyle());
+        backBtn = new TextButton(game.languageManager.getText("back"), buttonStyle);
         backBtn.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
@@ -105,13 +151,29 @@ public class SettingsScreen implements Screen {
             }
         });
 
-        table.add(titleLabel).padBottom(40).row();
-        table.add(volumeLabel).padBottom(10).row();
-        table.add(volumeSlider).width(400).padBottom(20).row();
-        table.add(musicToggleBtn).padBottom(20).width(200).row();
-        table.add(resetBtn).padBottom(20).width(200).row();
-        table.add(backBtn).padTop(30).width(200).row();
+        // Собираем всё в таблицу
+        table.add(titleLabel).padBottom(50).row();
+        table.add(volumeLabel).padBottom(15).row();
+        table.add(volumeSlider).width(450).padBottom(30).row();
+        table.add(soundToggle).padBottom(30).width(280).height(55).row();
+        table.add(languageLabel).padBottom(15).row();
+        table.add(languageTable).padBottom(45).row(); // Увеличен отступ снизу
+        table.add(resetBtn).padBottom(30).width(280).height(55).row();
+        table.add(backBtn).padTop(10).width(220).height(65).row();
         table.center();
+    }
+
+    private void refreshUI() {
+        // Обновляем все тексты при смене языка
+        titleLabel.setText(game.languageManager.getText("settings"));
+        volumeLabel.setText(game.languageManager.getText("volume") + ": " + (int)(game.volume * 100) + "%");
+        soundToggle.setText(game.languageManager.getText("music") + ": " +
+                (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
+        languageLabel.setText(game.languageManager.getText("language") + ":");
+        languageRuBtn.setText(game.languageManager.getText("russian"));
+        languageEnBtn.setText(game.languageManager.getText("english"));
+        resetBtn.setText(game.languageManager.getText("reset_settings"));
+        backBtn.setText(game.languageManager.getText("back"));
     }
 
     @Override
@@ -128,12 +190,20 @@ public class SettingsScreen implements Screen {
     }
 
     @Override
+    public void show() {
+        Gdx.input.setInputProcessor(stage);
+    }
+
+    @Override
+    public void hide() {
+        Gdx.input.setInputProcessor(null);
+    }
+
+    @Override
     public void dispose() {
         stage.dispose();
     }
 
-    @Override public void show() {}
-    @Override public void hide() {}
     @Override public void pause() {}
     @Override public void resume() {}
 }

@@ -23,24 +23,28 @@ public class SplashScreen implements Screen {
             System.out.println("Файл splash.png не найден");
         }
 
-        // Через 4 секунды переходим в меню
+        // Через 4 секунды переходим
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-                game.setScreen(new StartMenuScreen(game));
+                // Если первый запуск - показываем выбор языка
+                if (game.isFirstLaunch()) {
+                    game.setScreen(new LanguageChoiceScreen(game));
+                } else {
+                    // Иначе сразу в меню
+                    game.setScreen(new StartMenuScreen(game));
+                }
             }
         }, 4);
     }
 
     @Override
     public void render(float delta) {
-        // Белый фон
         Gdx.gl.glClearColor(1, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         elapsedTime += delta;
 
-        // Прозрачность для плавного появления и исчезновения
         float alpha;
         if (elapsedTime < 1f) {
             alpha = elapsedTime / 1f;
