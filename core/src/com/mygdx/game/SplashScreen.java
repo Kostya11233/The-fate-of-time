@@ -20,7 +20,7 @@ public class SplashScreen implements Screen {
         try {
             logo = new Texture("splash.png");
         } catch (Exception e) {
-            System.out.println("Файл splash.png не найден");
+
         }
 
         // Через 4 секунды переходим

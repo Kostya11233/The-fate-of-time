@@ -51,7 +51,7 @@ public class TheFateGame extends Game {
                 menuMusic.play();
             }
         } catch (Exception e) {
-            System.out.println("Ошибка загрузки музыки: " + e.getMessage());
+
         }
 
         SCREEN_WIDTH = Gdx.graphics.getWidth();
@@ -81,7 +81,6 @@ public class TheFateGame extends Game {
             generator.dispose();
             System.out.println("Шрифты загружены!");
         } catch (Exception e) {
-            System.out.println("Ошибка загрузки шрифтов: " + e.getMessage());
             font = new BitmapFont();
             titleFont = new BitmapFont();
         }

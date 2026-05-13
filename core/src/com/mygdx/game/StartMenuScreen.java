@@ -56,7 +56,6 @@ public class StartMenuScreen implements Screen {
         try {
             doshirakTexture = new Texture("doshirak.png");
         } catch (Exception e) {
-            System.out.println("Файл doshirak.png не найден");
             com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(100, 100, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
             pixmap.setColor(0.8f, 0.5f, 0.2f, 1);
             pixmap.fill();
@@ -83,11 +82,10 @@ public class StartMenuScreen implements Screen {
         float btnHeight = 65f;
         float centerX = (w - btnWidth) / 2;
 
-        // Доширак - ЕЩЕ БОЛЬШЕ И ЕЩЕ ВЫШЕ
-        float imageSize = 260f;  // Было 200f - увеличили до 260
-        float imageY = h / 2 + 70;  // Подняли еще выше (было +40)
+        float imageSize = 260f;
+        float imageY = h / 2 + 70;
 
-        float startY = imageY - imageSize/2 - 75;  // Кнопки еще ниже
+        float startY = imageY - imageSize/2 - 75;
         float stepY = 80f;
 
         // Изображение в центре
@@ -177,28 +175,22 @@ public class StartMenuScreen implements Screen {
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
 
-        // Настройка шрифта
         game.titleFont.getData().setScale(0.65f);
 
-        // Получаем ширину текста
         glyphLayout.setText(game.titleFont, title);
         float titleWidth = glyphLayout.width;
         float titleX = (w - titleWidth) / 2;
         float titleY = h - 65;
 
-        // Рисуем тень
         game.titleFont.setColor(0, 0, 0, 0.5f);
         game.titleFont.draw(game.batch, title, titleX + 2, titleY - 2);
 
-        // Рисуем золотой текст
         game.titleFont.setColor(1, 0.85f, 0.3f, 1);
         game.titleFont.draw(game.batch, title, titleX, titleY);
 
-        // Эффект свечения
         game.titleFont.setColor(1, 0.95f, 0.6f, 0.3f);
         game.titleFont.draw(game.batch, title, titleX - 1, titleY + 1);
 
-        // Возвращаем стандартный цвет
         game.titleFont.setColor(1, 1, 1, 1);
     }
 
@@ -207,8 +199,10 @@ public class StartMenuScreen implements Screen {
         stage.getViewport().update(width, height, true);
         game.resize(width, height);
 
+        // Пересоздаем UI
         stage.clear();
         createUI();
+        refreshButtonTexts(); // Обновляем текст после пересоздания
     }
 
     @Override
@@ -221,16 +215,19 @@ public class StartMenuScreen implements Screen {
 
     @Override
     public void show() {
+        // ВАЖНО: переустанавливаем обработчик ввода
         Gdx.input.setInputProcessor(stage);
         refreshButtonTexts();
         if (game.menuMusic != null && game.musicEnabled && !game.menuMusic.isPlaying()) {
             game.menuMusic.play();
             game.menuMusic.setVolume(game.volume);
         }
+        System.out.println("StartMenuScreen показан, кнопки должны работать");
     }
 
     @Override
     public void hide() {
+        // Не очищаем обработчик при скрытии
         if (game.menuMusic != null && game.menuMusic.isPlaying()) {
             game.menuMusic.pause();
         }

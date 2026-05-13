@@ -3,11 +3,12 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 public class ChoiceDialog implements Screen {
@@ -27,42 +28,54 @@ public class ChoiceDialog implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        // Стили
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
-        // Заголовок
-        Label titleLabel = new Label(game.languageManager.getText("choose_action"), labelStyle);
+        Label titleLabel = new Label("ВЫБЕРИТЕ ДЕЙСТВИЕ", labelStyle);
         titleLabel.setFontScale(1.5f);
 
-        // Новая игра
-        TextButton newGameBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
-        newGameBtn.addListener(new ChangeListener() {
+        TextButton newGameBtn = new TextButton("НОВАЯ ИГРА", buttonStyle);
+        newGameBtn.addListener(new ClickListener() {
             @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+            public void clicked(InputEvent event, float x, float y) {
                 System.out.println("Новая игра");
-                game.setScreen(menuScreen);
+                game.prefs.remove("currentMap");
+                game.prefs.remove("playerX");
+                game.prefs.remove("playerY");
+                game.prefs.remove("enteredFromDoor");
+                game.prefs.flush();
+                game.setScreen(new Corridor1Screen(game, false));
             }
         });
 
-        // Продолжить
-        TextButton continueBtn = new TextButton(game.languageManager.getText("continue"), buttonStyle);
-        continueBtn.addListener(new ChangeListener() {
+        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", buttonStyle);
+        continueBtn.addListener(new ClickListener() {
             @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+            public void clicked(InputEvent event, float x, float y) {
                 System.out.println("Продолжить игру");
-                game.setScreen(menuScreen);
+                game.setScreen(new Corridor1Screen(game, true));
             }
         });
-
-        // Отмена
-        TextButton cancelBtn = new TextButton(game.languageManager.getText("cancel"), buttonStyle);
-        cancelBtn.addListener(new ChangeListener() {
+// Новая игра
+        newGameBtn = new TextButton("НОВАЯ ИГРА", buttonStyle);
+        newGameBtn.addListener(new ClickListener() {
             @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+            public void clicked(InputEvent event, float x, float y) {
+                game.prefs.remove("currentMap");
+                game.prefs.remove("playerX");
+                game.prefs.remove("playerY");
+                game.prefs.remove("enteredFromDoor");
+                game.prefs.flush();
+                game.setScreen(new Corridor1Screen(game, false)); // Стартуем с коридора 1
+            }
+        });
+        TextButton cancelBtn = new TextButton("ОТМЕНА", buttonStyle);
+        cancelBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
                 game.setScreen(menuScreen);
             }
         });
@@ -93,9 +106,7 @@ public class ChoiceDialog implements Screen {
     }
 
     @Override
-    public void hide() {
-        Gdx.input.setInputProcessor(null);
-    }
+    public void hide() {}
 
     @Override
     public void dispose() {
