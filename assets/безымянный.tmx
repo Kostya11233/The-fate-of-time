@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="23" height="13" tilewidth="70" tileheight="70" infinite="0" nextlayerid="2" nextobjectid="1">
+ <tileset firstgid="1" name="map" tilewidth="70" tileheight="70" spacing="2" tilecount="299" columns="23">
+  <image source="map.png" width="1672" height="941"/>
+ </tileset>
+ <layer id="1" name="Слой тайлов 1" width="23" height="13">
+  <data encoding="base64" compression="zlib">
+   eJwNwwWUCAYAANA7juP0uTvNneM4Z0xPt2nTOTETMznd3TWx6ZxNd1tom2mWuptNd/z3/g8MCAiIZ3yDTGBCg01kYkNMYlKTmdwUpjSVoaY2zHAjTGNa05neDGY0k5nNYqRRZjXabGY3xhzmNNZcxpnbD8xjXj80n/ktYEELWdgifmRRi1ncEpa0lKUtY1nLWd4KVrSSH1vZKla1mtWtYU1r+Ym1rWNd61nfBja0kY1tYlOb+anNbWFLW/mZrf3cNra1ne39wg5+aUc72dkudrWbX9ndHva0l73tY1/72d8BDnSQgx3iUIc53BGOdJSjHeNYxzneCU50kpP92ilOdZrT/cZvneFMZznbOc51nvNd4EIXudjvXOL3/uBSl7ncFa50latd41rXud4NbnSTm93iVre53R3+6E/+7C/udJe73eNe97nfA/7qbx70dw952CMe9ZjHPeFJT/mHf/qXf/uP/3raM571nOe94EUvedkrXvWa173hTW952zve9Z73/c//feBDH/nYJz71mc994Utf+do3vvWdAYEYz/gGmcCEBpvIxIaYxKQmM7kpTGkqQ01tmOFGmMa0pjO9GcxoJjObxUijzGq02cxujDnMaay5jPM9Ut2DXw==
+  </data>
+ </layer>
+</map>
