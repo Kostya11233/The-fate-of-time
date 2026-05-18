@@ -9,7 +9,7 @@ public class K7RoomScreen extends BaseGameScreen {
     }
 
     public K7RoomScreen(TheFateGame game, boolean loadSavedGame, float startX) {
-        super(game, loadSavedGame);
+        super(game, loadSavedGame, startX);
         this.position = new Vector2(startX, fixedY);
         this.facingRight = true;
         if (camera != null) {
@@ -29,7 +29,21 @@ public class K7RoomScreen extends BaseGameScreen {
     protected void setupExitTransitions(String exitId) {
         System.out.println("K7RoomScreen: выход из комнаты " + exitId);
         targetMap = "cormap/corid4.tmx";
-        targetX = 640;  // door43
+        targetX = 1920;
         targetY = fixedY;
+    }
+
+    @Override
+    protected void checkInteractions() {
+
+        if (!isTransitioning && !isPaused) {
+            showInteractionBtn = true;
+            pendingExitId = "exit7";
+            if (interactionBtn != null && !interactionBtn.isVisible()) {
+                interactionBtn.setVisible(true);
+            }
+        } else {
+            if (interactionBtn != null) interactionBtn.setVisible(false);
+        }
     }
 }

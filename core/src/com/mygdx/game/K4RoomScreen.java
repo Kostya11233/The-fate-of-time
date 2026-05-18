@@ -30,7 +30,7 @@ public class K4RoomScreen extends BaseGameScreen {
     @Override
     protected void setupExitTransitions(String exitId) {
         targetMap = "cormap/corid2.tmx";
-        targetX = 1400;
+        targetX = 2464;
         targetY = fixedY;
     }
 }

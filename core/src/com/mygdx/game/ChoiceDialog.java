@@ -3,13 +3,13 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 
 public class ChoiceDialog implements Screen {
     private final TheFateGame game;
@@ -28,51 +28,39 @@ public class ChoiceDialog implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.7f);
+        stage.addActor(darkBg);
+
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
-        Label titleLabel = new Label("ВЫБЕРИТЕ ДЕЙСТВИЕ", labelStyle);
+        Label titleLabel = new Label(game.languageManager.getText("choose_action"), labelStyle);
         titleLabel.setFontScale(1.5f);
 
-        TextButton newGameBtn = new TextButton("НОВАЯ ИГРА", buttonStyle);
+        TextButton newGameBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
         newGameBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Новая игра");
-                game.prefs.remove("currentMap");
-                game.prefs.remove("playerX");
-                game.prefs.remove("playerY");
-                game.prefs.remove("enteredFromDoor");
-                game.prefs.flush();
-                game.setScreen(new Corridor1Screen(game, false));
+                // Запускаем новую игру
+                game.setScreen(new PlatformGameScreen(game));
             }
         });
 
-        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", buttonStyle);
+        TextButton continueBtn = new TextButton(game.languageManager.getText("continue"), buttonStyle);
         continueBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Продолжить игру");
-                game.setScreen(new Corridor1Screen(game, true));
+                // Продолжение – пока просто возврат в меню (можно реализовать позже)
+                game.setScreen(menuScreen);
             }
         });
-// Новая игра
-        newGameBtn = new TextButton("НОВАЯ ИГРА", buttonStyle);
-        newGameBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.prefs.remove("currentMap");
-                game.prefs.remove("playerX");
-                game.prefs.remove("playerY");
-                game.prefs.remove("enteredFromDoor");
-                game.prefs.flush();
-                game.setScreen(new Corridor1Screen(game, false)); // Стартуем с коридора 1
-            }
-        });
-        TextButton cancelBtn = new TextButton("ОТМЕНА", buttonStyle);
+
+        TextButton cancelBtn = new TextButton(game.languageManager.getText("cancel"), buttonStyle);
         cancelBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -80,16 +68,19 @@ public class ChoiceDialog implements Screen {
             }
         });
 
-        table.add(titleLabel).padBottom(40).row();
-        table.add(newGameBtn).width(250).height(60).padBottom(20).row();
-        table.add(continueBtn).width(250).height(60).padBottom(20).row();
-        table.add(cancelBtn).width(250).height(60).padTop(10).row();
-        table.center();
+        Table dialog = new Table();
+        dialog.pad(30);
+        dialog.add(titleLabel).padBottom(40).row();
+        dialog.add(newGameBtn).width(280).height(70).padBottom(20).row();
+        dialog.add(continueBtn).width(280).height(70).padBottom(20).row();
+        dialog.add(cancelBtn).width(280).height(70).row();
+
+        table.add(dialog).center();
     }
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.2f, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         stage.act(delta);
         stage.draw();
@@ -106,7 +97,9 @@ public class ChoiceDialog implements Screen {
     }
 
     @Override
-    public void hide() {}
+    public void hide() {
+        Gdx.input.setInputProcessor(null);
+    }
 
     @Override
     public void dispose() {

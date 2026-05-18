@@ -52,6 +52,9 @@ public class LanguageManager {
         ru.put("volume", "ГРОМКОСТЬ");
         ru.put("select_language", "ВЫБЕРИТЕ ЯЗЫК");
         ru.put("welcome", "ДОБРО ПОЖАЛОВАТЬ!");
+        ru.put("required_items", "Деталей: %d/%d");
+        ru.put("game_over", "ВЫ УМЕРЛИ");
+        ru.put("level_complete", "УРОВЕНЬ ПРОЙДЕН");
         translations.put(RUSSIAN, ru);
 
         // Английский язык
@@ -76,6 +79,9 @@ public class LanguageManager {
         en.put("volume", "VOLUME");
         en.put("select_language", "SELECT LANGUAGE");
         en.put("welcome", "WELCOME!");
+        en.put("required_items", "Parts: %d/%d");
+        en.put("game_over", "GAME OVER");
+        en.put("level_complete", "LEVEL COMPLETE");
         translations.put(ENGLISH, en);
     }
 
@@ -87,11 +93,15 @@ public class LanguageManager {
         return key;
     }
 
+    public String format(String key, Object... args) {
+        return String.format(getText(key), args);
+    }
+
     public void setLanguage(String language) {
         if (language.equals(RUSSIAN) || language.equals(ENGLISH)) {
             this.currentLanguage = language;
             prefs.putString("language", language);
-            prefs.putBoolean("firstLaunch", false); // Сохраняем что не первый запуск
+            prefs.putBoolean("firstLaunch", false);
             prefs.flush();
             System.out.println("Язык изменен на: " + language);
         }

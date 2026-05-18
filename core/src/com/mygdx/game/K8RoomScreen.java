@@ -29,7 +29,7 @@ public class K8RoomScreen extends BaseGameScreen {
     protected void setupExitTransitions(String exitId) {
         System.out.println("K8RoomScreen: выход из комнаты " + exitId);
         targetMap = "cormap/corid4.tmx";
-        targetX = 640;  // door41
+        targetX = 400;  // door41
         targetY = fixedY;
     }
 }

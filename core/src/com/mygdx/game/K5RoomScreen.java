@@ -29,7 +29,7 @@ public class K5RoomScreen extends BaseGameScreen {
     protected void setupExitTransitions(String exitId) {
         System.out.println("K5RoomScreen: выход из комнаты " + exitId);
         targetMap = "cormap/corid3.tmx";
-        targetX = 640;  // door31
+        targetX = 864;  // door31
         targetY = fixedY;
     }
 }

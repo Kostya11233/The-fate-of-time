@@ -28,7 +28,6 @@ public class StartMenuScreen implements Screen {
     private TextButton exitBtn;
 
     private TextButton.TextButtonStyle buttonStyle;
-
     private GlyphLayout glyphLayout;
 
     public StartMenuScreen(TheFateGame game) {
@@ -77,34 +76,30 @@ public class StartMenuScreen implements Screen {
         float w = stage.getViewport().getWorldWidth();
         float h = stage.getViewport().getWorldHeight();
 
-        // Кнопки
         float btnWidth = 300f;
         float btnHeight = 65f;
         float centerX = (w - btnWidth) / 2;
 
         float imageSize = 260f;
         float imageY = h / 2 + 70;
-
         float startY = imageY - imageSize/2 - 75;
         float stepY = 80f;
 
-        // Изображение в центре
         doshirakImage.setSize(imageSize, imageSize);
         doshirakImage.setPosition((w - imageSize) / 2, imageY - imageSize/2);
         stage.addActor(doshirakImage);
 
-        // Кнопка СТАРТ
         startBtn = new TextButton(game.languageManager.getText("start"), buttonStyle);
         startBtn.setPosition(centerX, startY);
         startBtn.setSize(btnWidth, btnHeight);
         startBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                // Показываем диалог выбора (Новая игра / Продолжить)
                 game.setScreen(new ChoiceDialog(game, StartMenuScreen.this));
             }
         });
 
-        // Кнопка НАСТРОЙКИ
         settingsBtn = new TextButton(game.languageManager.getText("settings"), buttonStyle);
         settingsBtn.setPosition(centerX, startY - stepY);
         settingsBtn.setSize(btnWidth, btnHeight);
@@ -115,7 +110,6 @@ public class StartMenuScreen implements Screen {
             }
         });
 
-        // Кнопка СОЦСЕТИ
         socBtn = new TextButton(game.languageManager.getText("social"), buttonStyle);
         socBtn.setPosition(centerX, startY - stepY * 2);
         socBtn.setSize(btnWidth, btnHeight);
@@ -126,7 +120,6 @@ public class StartMenuScreen implements Screen {
             }
         });
 
-        // Кнопка ВЫХОД
         exitBtn = new TextButton(game.languageManager.getText("exit"), buttonStyle);
         exitBtn.setPosition(centerX, startY - stepY * 3);
         exitBtn.setSize(btnWidth, btnHeight);
@@ -160,10 +153,7 @@ public class StartMenuScreen implements Screen {
 
         game.batch.begin();
         background.draw(game.batch, game.camera, delta);
-
-        // Рисуем заголовок
         drawTitle();
-
         game.batch.end();
 
         stage.act(delta);
@@ -176,7 +166,6 @@ public class StartMenuScreen implements Screen {
         float h = Gdx.graphics.getHeight();
 
         game.titleFont.getData().setScale(0.65f);
-
         glyphLayout.setText(game.titleFont, title);
         float titleWidth = glyphLayout.width;
         float titleX = (w - titleWidth) / 2;
@@ -184,13 +173,10 @@ public class StartMenuScreen implements Screen {
 
         game.titleFont.setColor(0, 0, 0, 0.5f);
         game.titleFont.draw(game.batch, title, titleX + 2, titleY - 2);
-
         game.titleFont.setColor(1, 0.85f, 0.3f, 1);
         game.titleFont.draw(game.batch, title, titleX, titleY);
-
         game.titleFont.setColor(1, 0.95f, 0.6f, 0.3f);
         game.titleFont.draw(game.batch, title, titleX - 1, titleY + 1);
-
         game.titleFont.setColor(1, 1, 1, 1);
     }
 
@@ -198,11 +184,9 @@ public class StartMenuScreen implements Screen {
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
         game.resize(width, height);
-
-        // Пересоздаем UI
         stage.clear();
         createUI();
-        refreshButtonTexts(); // Обновляем текст после пересоздания
+        refreshButtonTexts();
     }
 
     @Override
@@ -215,19 +199,16 @@ public class StartMenuScreen implements Screen {
 
     @Override
     public void show() {
-        // ВАЖНО: переустанавливаем обработчик ввода
         Gdx.input.setInputProcessor(stage);
         refreshButtonTexts();
         if (game.menuMusic != null && game.musicEnabled && !game.menuMusic.isPlaying()) {
             game.menuMusic.play();
             game.menuMusic.setVolume(game.volume);
         }
-        System.out.println("StartMenuScreen показан, кнопки должны работать");
     }
 
     @Override
     public void hide() {
-        // Не очищаем обработчик при скрытии
         if (game.menuMusic != null && game.menuMusic.isPlaying()) {
             game.menuMusic.pause();
         }

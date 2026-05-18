@@ -80,14 +80,17 @@ public abstract class BaseGameScreen implements Screen {
 
     protected float playerSize = 250f;
     protected float fixedY = 180;
-    Corridor3Screen newScreen;
     protected boolean loadSavedGame;
     protected boolean facingRight = true;
     protected String enteredFromDoor = "door1";
 
-    // Новые поля для переходов
     protected String pendingDoorId = null;
     protected String pendingExitId = null;
+
+    protected String sourceDoorId = null; // запоминаем, через какую дверь вошли на текущую карту
+    protected float spawnX = 640; // точка спавна по умолчанию
+    private int spawnId;
+
     public BaseGameScreen(TheFateGame game, boolean loadSavedGame, float startX) {
         this(game, loadSavedGame);
         this.position = new Vector2(startX, fixedY);
@@ -96,6 +99,7 @@ public abstract class BaseGameScreen implements Screen {
             camera.position.set(position.x, 360, 0);
         }
     }
+
     public BaseGameScreen(TheFateGame game, boolean loadSavedGame) {
         this.game = game;
         this.loadSavedGame = loadSavedGame;
@@ -119,14 +123,34 @@ public abstract class BaseGameScreen implements Screen {
 
     protected abstract String getDefaultMap();
     protected abstract void setupDoorTransitions(String doorId);
-    protected void setupExitTransitions(String exitId) {
-        // По умолчанию - пустой метод, переопределяется в наследниках
+    protected void setupExitTransitions(String exitId) {}
+
+    protected float readSpawnPoint() {
+        if (tiledMap == null) return 640;
+
+        MapLayer spawnLayer = tiledMap.getLayers().get("spawn");
+        if (spawnLayer == null) spawnLayer = tiledMap.getLayers().get("spawns");
+        if (spawnLayer != null) {
+            for (MapObject obj : spawnLayer.getObjects()) {
+                String name = obj.getName();
+                String type = obj.getProperties().get("type", String.class);
+                if (name != null && name.equals("spawn") || (type != null && type.equals("spawn"))) {
+                    if (obj instanceof RectangleMapObject) {
+                        Rectangle rect = ((RectangleMapObject) obj).getRectangle();
+                        return rect.x + rect.width / 2;
+                    } else {
+                        float x = obj.getProperties().get("x", Float.class);
+                        return x;
+                    }
+                }
+            }
+        }
+        return 640;
     }
 
     protected void loadTextures() {
         Texture standTexture = new Texture("player/step1.png");
         standFrame = new TextureRegion(standTexture);
-
         standLeftFrame = new TextureRegion(standTexture);
         standLeftFrame.flip(true, false);
 
@@ -166,15 +190,17 @@ public abstract class BaseGameScreen implements Screen {
             tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
             System.out.println("Карта загружена: " + mapPath);
 
-            // Сбрасываем pending при загрузке новой карты
             pendingDoorId = null;
             pendingExitId = null;
             showInteractionBtn = false;
             if (interactionBtn != null) interactionBtn.setVisible(false);
+
+            spawnX = readSpawnPoint();
         } catch (Exception e) {
             System.out.println("Ошибка загрузки карты: " + e.getMessage());
         }
     }
+
     protected void checkInteractions() {
         if (isTransitioning || tiledMap == null) {
             showInteractionBtn = false;
@@ -194,58 +220,68 @@ public abstract class BaseGameScreen implements Screen {
                 playerSize
         );
 
-        // Проверяем слой doors
+        // Слой дверей
         MapLayer doorsLayer = tiledMap.getLayers().get("doors");
+        if (doorsLayer == null) doorsLayer = tiledMap.getLayers().get("door");
         if (doorsLayer != null) {
             for (MapObject object : doorsLayer.getObjects()) {
-                if (object instanceof RectangleMapObject) {
-                    RectangleMapObject rectObject = (RectangleMapObject) object;
-                    Rectangle rect = rectObject.getRectangle();
+                Rectangle rect = getObjectRectangle(object);
+                if (rect != null && playerRect.overlaps(rect)) {
+                    showInteractionBtn = true;
+                    pendingDoorId = object.getName();
+                    if (pendingDoorId == null || pendingDoorId.isEmpty()) {
+                        pendingDoorId = object.getProperties().get("id", String.class);
+                    }
+                    System.out.println("ДВЕРЬ НАЙДЕНА! ID: " + pendingDoorId);
+                    break;
+                }
+            }
+        }
 
-                    // Добавим отладку
-                    System.out.println("Проверка двери: " + rect.x + ", " + rect.y + " - игрок: " + playerRect.x + ", " + playerRect.y);
-
-                    if (playerRect.overlaps(rect)) {
+        // Слой выходов
+        if (!showInteractionBtn) {
+            MapLayer exitLayer = tiledMap.getLayers().get("exit");
+            if (exitLayer == null) exitLayer = tiledMap.getLayers().get("exits");
+            if (exitLayer != null) {
+                for (MapObject object : exitLayer.getObjects()) {
+                    Rectangle rect = getObjectRectangle(object);
+                    if (rect != null && playerRect.overlaps(rect)) {
                         showInteractionBtn = true;
-                        pendingDoorId = object.getName();
-                        if (pendingDoorId == null || pendingDoorId.isEmpty()) {
-                            pendingDoorId = object.getProperties().get("id", String.class);
+                        pendingExitId = object.getName();
+                        if (pendingExitId == null || pendingExitId.isEmpty()) {
+                            pendingExitId = object.getProperties().get("id", String.class);
                         }
-                        System.out.println("ДВЕРЬ НАЙДЕНА! ID: " + pendingDoorId);
+                        System.out.println("ВЫХОД НАЙДЕН! ID: " + pendingExitId);
                         break;
                     }
                 }
             }
         }
 
-        // Проверяем слой exit
-        if (!showInteractionBtn) {
-            MapLayer exitLayer = tiledMap.getLayers().get("exit");
-            if (exitLayer != null) {
-                for (MapObject object : exitLayer.getObjects()) {
-                    if (object instanceof RectangleMapObject) {
-                        RectangleMapObject rectObject = (RectangleMapObject) object;
-                        Rectangle rect = rectObject.getRectangle();
-
-                        if (playerRect.overlaps(rect)) {
-                            showInteractionBtn = true;
-                            pendingExitId = object.getName();
-                            if (pendingExitId == null || pendingExitId.isEmpty()) {
-                                pendingExitId = object.getProperties().get("id", String.class);
-                            }
-                            System.out.println("ВЫХОД НАЙДЕН! ID: " + pendingExitId);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
         if (wasShowing != showInteractionBtn && interactionBtn != null) {
-            System.out.println("Кнопка теперь: " + (showInteractionBtn ? "ВИДИМА" : "НЕВИДИМА"));
             interactionBtn.setVisible(showInteractionBtn);
         }
     }
+
+    // Вспомогательный метод – получает прямоугольник из любого объекта карты
+    private Rectangle getObjectRectangle(MapObject object) {
+        if (object instanceof RectangleMapObject) {
+            return ((RectangleMapObject) object).getRectangle();
+        } else {
+            // Для точек или полигонов – берём координаты и задаём размер по умолчанию
+            Float x = object.getProperties().get("x", Float.class);
+            Float y = object.getProperties().get("y", Float.class);
+            if (x != null && y != null) {
+                Float width = object.getProperties().get("width", Float.class);
+                Float height = object.getProperties().get("height", Float.class);
+                float w = (width != null) ? width : 64f;
+                float h = (height != null) ? height : 64f;
+                return new Rectangle(x, y, w, h);
+            }
+        }
+        return null;
+    }
+
 
 
     protected void executeTransition() {
@@ -264,8 +300,9 @@ public abstract class BaseGameScreen implements Screen {
         final String nextMap = targetMap;
         final float nextX = targetX;
         final float nextY = targetY;
+        final String usedDoorId = (pendingDoorId != null) ? pendingDoorId : pendingExitId;
 
-        System.out.println("Переход: " + currentMap + " -> " + nextMap + " на X=" + nextX);
+        System.out.println("Переход: " + currentMap + " -> " + nextMap + " на X=" + nextX + " через " + usedDoorId);
 
         pendingDoorId = null;
         pendingExitId = null;
@@ -273,53 +310,43 @@ public abstract class BaseGameScreen implements Screen {
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-                BaseGameScreen newScreen = null;  // <-- ИСПРАВЛЕНО: BaseGameScreen вместо Corridor3Screen
+                BaseGameScreen newScreen = null;
 
+                // Используем конструкторы с startX для всех экранов
                 if (nextMap.equals("cormap/corid1.tmx")) {
-                    newScreen = new Corridor1Screen(game, false);
-                }
-                else if (nextMap.equals("cormap/corid2.tmx")) {
-                    newScreen = new Corridor2Screen(game, false);
-                }
-                else if (nextMap.equals("cormap/corid3.tmx")) {
-                    newScreen = new Corridor3Screen(game, false);
-                }
-                else if (nextMap.equals("cormap/corid4.tmx")) {
-                    newScreen = new Corridor4Screen(game, false);
-                }
-                else if (nextMap.equals("room/k1.tmx")) {
-                    newScreen = new K1RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k2.tmx")) {
-                    newScreen = new K2RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k3.tmx")) {
-                    newScreen = new K3RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k4.tmx")) {
-                    newScreen = new K4RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k5.tmx")) {
-                    newScreen = new K5RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k6.tmx")) {
-                    newScreen = new K6RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k7.tmx")) {
-                    newScreen = new K7RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k8.tmx")) {
-                    newScreen = new K8RoomScreen(game, false);
-                }
-                else if (nextMap.equals("room/k9.tmx")) {
-                    newScreen = new K9RoomScreen(game, false);
-                }
-                else {
-                    newScreen = new Corridor1Screen(game, false);
+                    newScreen = new Corridor1Screen(game, false, nextX);
+                } else if (nextMap.equals("cormap/corid2.tmx")) {
+                    newScreen = new Corridor2Screen(game, false, nextX);
+                } else if (nextMap.equals("cormap/corid3.tmx")) {
+                    newScreen = new Corridor3Screen(game, false, nextX);
+                } else if (nextMap.equals("cormap/corid4.tmx")) {
+                    newScreen = new Corridor4Screen(game, false, nextX);
+                } else if (nextMap.equals("room/k1.tmx")) {
+                    newScreen = new K1RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k2.tmx")) {
+                    newScreen = new K2RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k3.tmx")) {
+                    newScreen = new K3RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k4.tmx")) {
+                    newScreen = new K4RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k5.tmx")) {
+                    newScreen = new K5RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k6.tmx")) {
+                    newScreen = new K6RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k7.tmx")) {
+                    newScreen = new K7RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k8.tmx")) {
+                    newScreen = new K8RoomScreen(game, false, nextX);
+                } else if (nextMap.equals("room/k9.tmx")) {
+                    newScreen = new K9RoomScreen(game, false, nextX);
+                } else {
+                    System.out.println("Неизвестная карта: " + nextMap + ", используем Corridor1Screen");
+                    newScreen = new Corridor1Screen(game, false, nextX);
                 }
 
                 if (newScreen != null) {
-                    newScreen.setPosition(nextX, nextY);
+                    if (usedDoorId != null) newScreen.sourceDoorId = usedDoorId;
+                    // Позиция уже установлена в конструкторе через startX, дополнительный setPosition не нужен
                     game.setScreen(newScreen);
                 }
             }
@@ -333,8 +360,10 @@ public abstract class BaseGameScreen implements Screen {
             camera.update();
         }
     }
+
     protected String lastUsedDoorId = null;
     protected float lastDoorX = 640;
+
     protected void createUI() {
         leftBtn = new ImageButton(new TextureRegionDrawable(leftTexture));
         leftBtn.setPosition(50, 50);
@@ -349,7 +378,6 @@ public abstract class BaseGameScreen implements Screen {
                 }
                 return true;
             }
-
             @Override
             public void touchUp(InputEvent event, float x, float y, int pointer, int button) {
                 leftPressed = false;
@@ -369,7 +397,6 @@ public abstract class BaseGameScreen implements Screen {
                 }
                 return true;
             }
-
             @Override
             public void touchUp(InputEvent event, float x, float y, int pointer, int button) {
                 rightPressed = false;
@@ -408,7 +435,6 @@ public abstract class BaseGameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 if (!isPaused && !isTransitioning && showInteractionBtn) {
                     System.out.println("Кнопка нажата!");
-
                     if (pendingDoorId != null) {
                         System.out.println("Переход через дверь: " + pendingDoorId);
                         setupDoorTransitions(pendingDoorId);
@@ -432,11 +458,9 @@ public abstract class BaseGameScreen implements Screen {
 
     protected void createPauseDialog() {
         pauseStage.clear();
-
         Table table = new Table();
         table.setFillParent(true);
         pauseStage.addActor(table);
-
         Table darkBg = new Table();
         darkBg.setFillParent(true);
         darkBg.setColor(0, 0, 0, 0.7f);
@@ -444,16 +468,13 @@ public abstract class BaseGameScreen implements Screen {
 
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
-
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
         Table dialogTable = new Table();
         dialogTable.pad(30);
-
         Label titleLabel = new Label("ПАУЗА", labelStyle);
         titleLabel.setFontScale(2f);
-
         TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", buttonStyle);
         continueBtn.addListener(new ClickListener() {
             @Override
@@ -464,7 +485,6 @@ public abstract class BaseGameScreen implements Screen {
                 Gdx.input.setInputProcessor(stage);
             }
         });
-
         TextButton saveAndExitBtn = new TextButton("СОХРАНИТЬ И ВЫЙТИ", buttonStyle);
         saveAndExitBtn.addListener(new ClickListener() {
             @Override
@@ -473,7 +493,6 @@ public abstract class BaseGameScreen implements Screen {
                 game.setScreen(new StartMenuScreen(game));
             }
         });
-
         TextButton settingsBtn = new TextButton("НАСТРОЙКИ", buttonStyle);
         settingsBtn.addListener(new ClickListener() {
             @Override
@@ -483,7 +502,6 @@ public abstract class BaseGameScreen implements Screen {
                 createSettingsInPause();
             }
         });
-
         TextButton exitBtn = new TextButton("ВЫЙТИ В МЕНЮ", buttonStyle);
         exitBtn.addListener(new ClickListener() {
             @Override
@@ -491,13 +509,11 @@ public abstract class BaseGameScreen implements Screen {
                 game.setScreen(new StartMenuScreen(game));
             }
         });
-
         dialogTable.add(titleLabel).padBottom(40).row();
         dialogTable.add(continueBtn).width(250).height(60).padBottom(20).row();
         dialogTable.add(saveAndExitBtn).width(250).height(60).padBottom(20).row();
         dialogTable.add(settingsBtn).width(250).height(60).padBottom(20).row();
         dialogTable.add(exitBtn).width(250).height(60).row();
-
         table.add(dialogTable).center();
     }
 
@@ -505,26 +521,20 @@ public abstract class BaseGameScreen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         pauseStage.addActor(table);
-
         Table darkBg = new Table();
         darkBg.setFillParent(true);
         darkBg.setColor(0, 0, 0, 0.7f);
         pauseStage.addActor(darkBg);
-
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
-
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
         Table settingsTable = new Table();
         settingsTable.pad(30);
-
         Label titleLabel = new Label("НАСТРОЙКИ", labelStyle);
         titleLabel.setFontScale(2f);
-
         final Label volumeLabel = new Label("ГРОМКОСТЬ: " + (int)(game.volume * 100) + "%", labelStyle);
-
         Table volumeControls = new Table();
         TextButton minusBtn = new TextButton("-", buttonStyle);
         minusBtn.addListener(new ClickListener() {
@@ -532,29 +542,22 @@ public abstract class BaseGameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 game.volume = Math.max(0, game.volume - 0.1f);
                 volumeLabel.setText("ГРОМКОСТЬ: " + (int)(game.volume * 100) + "%");
-                if (game.menuMusic != null) {
-                    game.menuMusic.setVolume(game.volume);
-                }
+                if (game.menuMusic != null) game.menuMusic.setVolume(game.volume);
                 game.saveSettings();
             }
         });
-
         TextButton plusBtn = new TextButton("+", buttonStyle);
         plusBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.volume = Math.min(1, game.volume + 0.1f);
                 volumeLabel.setText("ГРОМКОСТЬ: " + (int)(game.volume * 100) + "%");
-                if (game.menuMusic != null) {
-                    game.menuMusic.setVolume(game.volume);
-                }
+                if (game.menuMusic != null) game.menuMusic.setVolume(game.volume);
                 game.saveSettings();
             }
         });
-
         volumeControls.add(minusBtn).width(60).height(50).padRight(20);
         volumeControls.add(plusBtn).width(60).height(50);
-
         TextButton backBtn = new TextButton("НАЗАД", buttonStyle);
         backBtn.addListener(new ClickListener() {
             @Override
@@ -562,12 +565,10 @@ public abstract class BaseGameScreen implements Screen {
                 createPauseDialog();
             }
         });
-
         settingsTable.add(titleLabel).padBottom(40).row();
         settingsTable.add(volumeLabel).padBottom(20).row();
         settingsTable.add(volumeControls).padBottom(40).row();
         settingsTable.add(backBtn).width(200).height(60).row();
-
         table.add(settingsTable).center();
     }
 
@@ -583,17 +584,20 @@ public abstract class BaseGameScreen implements Screen {
 
     protected void loadGame() {
         if (loadSavedGame && game.prefs.contains("playerX")) {
-            float savedX = game.prefs.getFloat("playerX", 640);
+            float savedX = game.prefs.getFloat("playerX", spawnX);
             position = new Vector2(savedX, fixedY);
             facingRight = game.prefs.getBoolean("facingRight", true);
-            System.out.println("Загружено сохранение");
+            System.out.println("Загружено сохранение, позиция X=" + savedX);
         } else {
-            position = new Vector2(640, fixedY);
+            // Новая игра — используем точку спавна из карты
+            position = new Vector2(spawnX, fixedY);
             facingRight = true;
-            System.out.println("Новая игра");
+            System.out.println("Новая игра, спавн на X=" + spawnX);
         }
-        camera.position.set(position.x, 360, 0);
-        camera.update();
+        if (camera != null) {
+            camera.position.set(position.x, 360, 0);
+            camera.update();
+        }
     }
 
     protected void update(float delta) {
@@ -628,7 +632,6 @@ public abstract class BaseGameScreen implements Screen {
 
     protected void drawPlayer() {
         TextureRegion currentFrame;
-
         if (movingRight) {
             currentFrame = walkRightAnimation.getKeyFrame(stateTime, true);
             facingRight = true;
@@ -636,36 +639,27 @@ public abstract class BaseGameScreen implements Screen {
             currentFrame = walkLeftAnimation.getKeyFrame(stateTime, true);
             facingRight = false;
         } else {
-            if (facingRight) {
-                currentFrame = standFrame;
-            } else {
-                currentFrame = standLeftFrame;
-            }
+            if (facingRight) currentFrame = standFrame;
+            else currentFrame = standLeftFrame;
         }
-
         batch.draw(currentFrame, position.x - playerSize/2, position.y - playerSize/2, playerSize, playerSize);
     }
 
     @Override
     public void render(float delta) {
         update(delta);
-
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         if (tiledMapRenderer != null) {
             tiledMapRenderer.setView(camera);
             tiledMapRenderer.render();
         }
-
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         drawPlayer();
         batch.end();
-
         stage.act(delta);
         stage.draw();
-
         if (showPauseDialog) {
             pauseStage.act(delta);
             pauseStage.draw();
@@ -679,25 +673,17 @@ public abstract class BaseGameScreen implements Screen {
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
         pauseStage.getViewport().update(width, height, true);
-
-        if (pauseBtn != null) {
-            pauseBtn.setPosition(width - 100, height - 100);
-        }
-        if (inventoryBtn != null) {
-            inventoryBtn.setPosition(width - 100, 50);
-        }
-        if (interactionBtn != null) {
-            interactionBtn.setPosition(width / 2 - 40, height / 2 - 100);
-        }
+        if (pauseBtn != null) pauseBtn.setPosition(width - 100, height - 100);
+        if (inventoryBtn != null) inventoryBtn.setPosition(width - 100, 50);
+        if (interactionBtn != null) interactionBtn.setPosition(width / 2 - 40, height / 2 - 100);
     }
+
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
     }
-
     @Override
     public void hide() {}
-
     @Override
     public void dispose() {
         stage.dispose();
@@ -710,7 +696,32 @@ public abstract class BaseGameScreen implements Screen {
         inventoryTexture.dispose();
         interactionTexture.dispose();
     }
-
     @Override public void pause() {}
     @Override public void resume() {}
+    protected float readSpawnPointById(int spawnId) {
+        if (tiledMap == null) return 640;
+        MapLayer spawnLayer = tiledMap.getLayers().get("spawn");
+        if (spawnLayer == null) spawnLayer = tiledMap.getLayers().get("spawns");
+        if (spawnLayer != null) {
+            for (MapObject obj : spawnLayer.getObjects()) {
+                Integer id = obj.getProperties().get("id", Integer.class);
+                if (id == null) {
+                    String idStr = obj.getProperties().get("id", String.class);
+                    if (idStr != null) {
+                        try { id = Integer.parseInt(idStr); } catch(NumberFormatException e) {}
+                    }
+                }
+                if (id != null && id == spawnId) {
+                    if (obj instanceof RectangleMapObject) {
+                        Rectangle rect = ((RectangleMapObject) obj).getRectangle();
+                        return rect.x + rect.width / 2;
+                    } else {
+                        Float x = obj.getProperties().get("x", Float.class);
+                        if (x != null) return x;
+                    }
+                }
+            }
+        }
+        return 640;
+    }
 }

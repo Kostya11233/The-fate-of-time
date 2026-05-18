@@ -29,7 +29,7 @@ public class K9RoomScreen extends BaseGameScreen {
     protected void setupExitTransitions(String exitId) {
         System.out.println("K9RoomScreen: выход из комнаты " + exitId);
         targetMap = "cormap/corid4.tmx";
-        targetX = 640;  // door42
+        targetX = 1400;  // door42 (ID 4)
         targetY = fixedY;
     }
 }
