@@ -23,15 +23,15 @@ public class SplashScreen implements Screen {
 
         }
 
-        // Через 4 секунды переходим
+
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-                // Если первый запуск - показываем выбор языка
+
                 if (game.isFirstLaunch()) {
                     game.setScreen(new LanguageChoiceScreen(game));
                 } else {
-                    // Иначе сразу в меню
+
                     game.setScreen(new StartMenuScreen(game));
                 }
             }

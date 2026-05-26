@@ -25,14 +25,14 @@ public class LanguageChoiceScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        // Стили
+
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
-        // Заголовок (на русском и английском)
+
         Table titleTable = new Table();
         Label titleLabelRu = new Label("ВЫБЕРИТЕ ЯЗЫК", labelStyle);
         titleLabelRu.setFontScale(1.5f);
@@ -41,7 +41,7 @@ public class LanguageChoiceScreen implements Screen {
         titleTable.add(titleLabelRu).padBottom(5).row();
         titleTable.add(titleLabelEn);
 
-        // Кнопка РУССКИЙ
+
         TextButton ruBtn = new TextButton("РУССКИЙ", buttonStyle);
         ruBtn.addListener(new ChangeListener() {
             @Override
@@ -52,7 +52,7 @@ public class LanguageChoiceScreen implements Screen {
             }
         });
 
-        // Кнопка ENGLISH
+
         TextButton enBtn = new TextButton("ENGLISH", buttonStyle);
         enBtn.addListener(new ChangeListener() {
             @Override
@@ -63,9 +63,8 @@ public class LanguageChoiceScreen implements Screen {
             }
         });
 
-        // Таблица для кнопок с большим отступом между ними
         Table buttonTable = new Table();
-        buttonTable.add(ruBtn).width(280).height(80).padRight(40); // Отступ между кнопками 40px
+        buttonTable.add(ruBtn).width(280).height(80).padRight(40);
         buttonTable.add(enBtn).width(280).height(80);
 
         table.add(titleTable).padBottom(60).row();

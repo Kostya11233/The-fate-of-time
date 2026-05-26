@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
@@ -17,8 +16,8 @@ public class StartMenuScreen implements Screen {
     private final TheFateGame game;
     private Stage stage;
     private Texture buttonTexture;
-    private Texture doshirakTexture;
-    private Image doshirakImage;
+    private Texture backgroundTexture;
+    private TextButton continueBtn;
     private TextButton startBtn;
     private TextButton settingsBtn;
     private TextButton socBtn;
@@ -47,15 +46,10 @@ public class StartMenuScreen implements Screen {
         }
 
         try {
-            doshirakTexture = new Texture("doshirak.png");
+            backgroundTexture = new Texture("back.png");
         } catch (Exception e) {
-            com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(100, 100, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
-            pixmap.setColor(0.8f, 0.5f, 0.2f, 1);
-            pixmap.fill();
-            doshirakTexture = new Texture(pixmap);
-            pixmap.dispose();
+            backgroundTexture = null;
         }
-        doshirakImage = new Image(doshirakTexture);
     }
 
     private void createStyles() {
@@ -74,27 +68,42 @@ public class StartMenuScreen implements Screen {
         float btnHeight = 65f;
         float centerX = (w - btnWidth) / 2;
 
-        float imageSize = 260f;
-        float imageY = h / 2 + 70;
-        float startY = imageY - imageSize/2 - 75;
+        float startY = h / 2 + 30;
         float stepY = 80f;
 
-        doshirakImage.setSize(imageSize, imageSize);
-        doshirakImage.setPosition((w - imageSize) / 2, imageY - imageSize/2);
-        stage.addActor(doshirakImage);
+        if (game.hasSaveGame()) {
+            continueBtn = new TextButton(game.languageManager.getText("continue"), buttonStyle);
+            continueBtn.setPosition(centerX, startY);
+            continueBtn.setSize(btnWidth, btnHeight);
+            continueBtn.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    String savedMap = game.getSavedMap();
+                    int savedItems = game.getSavedItems();
+                    game.prefs.putInteger("chapter1_items", savedItems);
+                    game.prefs.flush();
+                    game.setScreen(new Chapter1Screen(game, savedMap, "spawn"));
+                }
+            });
+            stage.addActor(continueBtn);
+        }
 
-        startBtn = new TextButton(game.languageManager.getText("start"), buttonStyle);
-        startBtn.setPosition(centerX, startY);
+        startBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
+        float newGameY = game.hasSaveGame() ? startY - stepY : startY;
+        startBtn.setPosition(centerX, newGameY);
         startBtn.setSize(btnWidth, btnHeight);
         startBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new ChoiceDialog(game, StartMenuScreen.this));
+                game.clearSave();
+                game.prefs.putInteger("chapter1_items", 0);
+                game.prefs.flush();
+                game.setScreen(new Chapter1Screen(game, "room3.tmx", "spawn"));
             }
         });
 
         settingsBtn = new TextButton(game.languageManager.getText("settings"), buttonStyle);
-        settingsBtn.setPosition(centerX, startY - stepY);
+        settingsBtn.setPosition(centerX, newGameY - stepY);
         settingsBtn.setSize(btnWidth, btnHeight);
         settingsBtn.addListener(new ClickListener() {
             @Override
@@ -104,17 +113,16 @@ public class StartMenuScreen implements Screen {
         });
 
         socBtn = new TextButton(game.languageManager.getText("social"), buttonStyle);
-        socBtn.setPosition(centerX, startY - stepY * 2);
+        socBtn.setPosition(centerX, newGameY - stepY * 2);
         socBtn.setSize(btnWidth, btnHeight);
         socBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Соцсети - пока не реализовано");
             }
         });
 
         exitBtn = new TextButton(game.languageManager.getText("exit"), buttonStyle);
-        exitBtn.setPosition(centerX, startY - stepY * 3);
+        exitBtn.setPosition(centerX, newGameY - stepY * 3);
         exitBtn.setSize(btnWidth, btnHeight);
         exitBtn.addListener(new ClickListener() {
             @Override
@@ -130,7 +138,8 @@ public class StartMenuScreen implements Screen {
     }
 
     public void refreshButtonTexts() {
-        if (startBtn != null) startBtn.setText(game.languageManager.getText("start"));
+        if (continueBtn != null) continueBtn.setText(game.languageManager.getText("continue"));
+        if (startBtn != null) startBtn.setText(game.languageManager.getText("new_game"));
         if (settingsBtn != null) settingsBtn.setText(game.languageManager.getText("settings"));
         if (socBtn != null) socBtn.setText(game.languageManager.getText("social"));
         if (exitBtn != null) exitBtn.setText(game.languageManager.getText("exit"));
@@ -138,8 +147,19 @@ public class StartMenuScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.2f, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        game.batch.begin();
+
+        if (backgroundTexture != null) {
+            game.batch.draw(backgroundTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        } else {
+            Gdx.gl.glClearColor(0.1f, 0.1f, 0.2f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        }
+
+        game.batch.end();
 
         game.camera.update();
         game.batch.setProjectionMatrix(game.camera.combined);
@@ -183,24 +203,20 @@ public class StartMenuScreen implements Screen {
     public void dispose() {
         stage.dispose();
         if (buttonTexture != null) buttonTexture.dispose();
-        if (doshirakTexture != null) doshirakTexture.dispose();
+        if (backgroundTexture != null) backgroundTexture.dispose();
     }
 
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
         refreshButtonTexts();
-        if (game.menuMusic != null && game.musicEnabled && !game.menuMusic.isPlaying()) {
-            game.menuMusic.play();
-            game.menuMusic.setVolume(game.volume);
-        }
+        game.stopGameMusic();
+        game.startMenuMusic();
     }
 
     @Override
     public void hide() {
-        if (game.menuMusic != null && game.menuMusic.isPlaying()) {
-            game.menuMusic.pause();
-        }
+        game.stopMenuMusic();
     }
 
     @Override public void pause() {}

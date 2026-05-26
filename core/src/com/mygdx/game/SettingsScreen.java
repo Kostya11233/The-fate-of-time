@@ -49,20 +49,16 @@ public class SettingsScreen implements Screen {
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
-        // Заголовок
         titleLabel = new Label(game.languageManager.getText("settings"), labelStyle);
         titleLabel.setFontScale(2f);
 
-        // Громкость
         volumeLabel = new Label(game.languageManager.getText("volume") + ":", labelStyle);
 
-        // Текущее значение громкости (округленное до 10)
         int currentVolume = Math.round(game.volume * 100);
-        currentVolume = Math.round(currentVolume / 10.0f) * 10; // Округляем до 10
+        currentVolume = Math.round(currentVolume / 10.0f) * 10;
         volumeValueLabel = new Label(currentVolume + "%", labelStyle);
         volumeValueLabel.setFontScale(1.5f);
 
-        // Кнопка МИНУС (уменьшает на 10%)
         volumeMinusBtn = new TextButton("-", buttonStyle);
         volumeMinusBtn.addListener(new ClickListener() {
             @Override
@@ -75,11 +71,13 @@ public class SettingsScreen implements Screen {
                 if (game.menuMusic != null && game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
+                if (game.gameMusic != null && game.musicEnabled) {
+                    game.gameMusic.setVolume(game.volume);
+                }
                 game.saveSettings();
             }
         });
 
-        // Кнопка ПЛЮС (увеличивает на 10%)
         volumePlusBtn = new TextButton("+", buttonStyle);
         volumePlusBtn.addListener(new ClickListener() {
             @Override
@@ -92,17 +90,18 @@ public class SettingsScreen implements Screen {
                 if (game.menuMusic != null && game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
+                if (game.gameMusic != null && game.musicEnabled) {
+                    game.gameMusic.setVolume(game.volume);
+                }
                 game.saveSettings();
             }
         });
 
-        // Таблица для громкости
         volumeTable = new Table();
         volumeTable.add(volumeMinusBtn).width(60).height(50).padRight(30);
         volumeTable.add(volumeValueLabel).padRight(30);
         volumeTable.add(volumePlusBtn).width(60).height(50);
 
-        // Кнопка включения/выключения музыки
         String soundText = game.languageManager.getText("music") + ": " +
                 (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off"));
         soundToggle = new TextButton(soundText, buttonStyle);
@@ -120,11 +119,18 @@ public class SettingsScreen implements Screen {
                         game.menuMusic.pause();
                     }
                 }
+                if (game.gameMusic != null) {
+                    if (game.musicEnabled) {
+                        game.gameMusic.play();
+                        game.gameMusic.setVolume(game.volume);
+                    } else {
+                        game.gameMusic.pause();
+                    }
+                }
                 game.saveSettings();
             }
         });
 
-        // Выбор языка
         languageLabel = new Label(game.languageManager.getText("language") + ":", labelStyle);
 
         languageRuBtn = new TextButton(game.languageManager.getText("russian"), buttonStyle);
@@ -155,7 +161,6 @@ public class SettingsScreen implements Screen {
         languageTable.add(languageRuBtn).width(160).height(50).padRight(60);
         languageTable.add(languageEnBtn).width(160).height(50);
 
-        // Кнопка сброса
         resetBtn = new TextButton(game.languageManager.getText("reset_settings"), buttonStyle);
         resetBtn.addListener(new ChangeListener() {
             @Override
@@ -170,11 +175,13 @@ public class SettingsScreen implements Screen {
                         game.menuMusic.play();
                     }
                 }
+                if (game.gameMusic != null) {
+                    game.gameMusic.setVolume(game.volume);
+                }
                 game.saveSettings();
             }
         });
 
-        // Кнопка назад
         backBtn = new TextButton(game.languageManager.getText("back"), buttonStyle);
         backBtn.addListener(new ChangeListener() {
             @Override

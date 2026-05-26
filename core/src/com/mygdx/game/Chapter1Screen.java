@@ -18,7 +18,9 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -28,7 +30,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,6 +62,7 @@ public class Chapter1Screen implements Screen {
     private Stage uiStage;
     private Stage pauseStage;
     private Stage messageStage;
+    private Stage imageStage;
     private boolean isPaused = false;
     private boolean showInteractionBtn = false;
     private String pendingDoorId = null;
@@ -75,6 +77,16 @@ public class Chapter1Screen implements Screen {
     private Map<Body, String> itemBodies = new HashMap<>();
     private Array<Body> bodiesToDestroy = new Array<>();
     private boolean allItemsCollected = false;
+
+    private Map<Body, String> interactiveBodies = new HashMap<>();
+    private Texture currentImageTexture = null;
+    private boolean showingImage = false;
+    private Body pendingInteractiveBody = null;
+    private String pendingInteractiveName = null;
+    private Body pendingMaBody = null;
+
+    private float saveTimer = 0f;
+    private static final float SAVE_INTERVAL = 5f;
 
     public Chapter1Screen(TheFateGame game) {
         this(game, "room3.tmx", "spawn");
@@ -92,6 +104,7 @@ public class Chapter1Screen implements Screen {
         this.uiStage = new Stage(new ExtendViewport(1280, 720));
         this.pauseStage = new Stage(new ExtendViewport(1280, 720));
         this.messageStage = new Stage(new ExtendViewport(1280, 720));
+        this.imageStage = new Stage(new ExtendViewport(1280, 720));
 
         collectedItems = game.prefs.getInteger("chapter1_items", 0);
         allItemsCollected = collectedItems >= totalItems;
@@ -104,6 +117,8 @@ public class Chapter1Screen implements Screen {
         createCollisionAndTeleports();
 
         Gdx.input.setInputProcessor(uiStage);
+        game.stopMenuMusic();
+        game.startGameMusic();
     }
 
     private void loadTextures() {
@@ -167,7 +182,7 @@ public class Chapter1Screen implements Screen {
         upBtn.setPosition(screenW / 2 - btnSize / 2, 30 + btnSize + 20);
         upBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning) movingUp = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingUp = true; return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingUp = false; }
         });
@@ -177,7 +192,7 @@ public class Chapter1Screen implements Screen {
         downBtn.setPosition(screenW / 2 - btnSize / 2, 30);
         downBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning) movingDown = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingDown = true; return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingDown = false; }
         });
@@ -187,7 +202,7 @@ public class Chapter1Screen implements Screen {
         leftBtn.setPosition(screenW / 2 - btnSize - 20, 30 + btnSize / 2);
         leftBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning) movingLeft = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingLeft = true; return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingLeft = false; }
         });
@@ -197,7 +212,7 @@ public class Chapter1Screen implements Screen {
         rightBtn.setPosition(screenW / 2 + 20, 30 + btnSize / 2);
         rightBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning) movingRight = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingRight = true; return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingRight = false; }
         });
@@ -207,9 +222,12 @@ public class Chapter1Screen implements Screen {
         pauseBtn.setPosition(screenW - pauseSize - 20, screenH - pauseSize - 20);
         pauseBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
-                isPaused = true;
-                createPauseDialog();
-                Gdx.input.setInputProcessor(pauseStage);
+                if (!showingImage) {
+                    isPaused = true;
+                    createPauseDialog();
+                    Gdx.input.setInputProcessor(pauseStage);
+                    if (game.gameMusic != null) game.gameMusic.pause();
+                }
             }
         });
 
@@ -219,9 +237,23 @@ public class Chapter1Screen implements Screen {
         interactionBtn.setVisible(false);
         interactionBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
-                if (!isPaused && !isTransitioning && showInteractionBtn) {
-                    if (pendingDoorId != null) teleportToDoor(pendingDoorId);
-                    else if (pendingItemBody != null && pendingItemId != null) collectItem(pendingItemBody, pendingItemId);
+                if (!isPaused && !isTransitioning && showInteractionBtn && !showingImage) {
+                    if (pendingDoorId != null) {
+                        teleportToDoor(pendingDoorId);
+                    } else if (pendingItemBody != null && pendingItemId != null) {
+                        collectItem(pendingItemBody, pendingItemId);
+                    } else if (pendingInteractiveBody != null && pendingInteractiveName != null) {
+                        showImageForObject(pendingInteractiveName);
+                        showInteractionBtn = false;
+                        interactionBtn.setVisible(false);
+                        pendingInteractiveBody = null;
+                        pendingInteractiveName = null;
+                    } else if (pendingMaBody != null && allItemsCollected) {
+                        showToBeContinuedAndExit();
+                        showInteractionBtn = false;
+                        interactionBtn.setVisible(false);
+                        pendingMaBody = null;
+                    }
                 }
             }
         });
@@ -257,12 +289,24 @@ public class Chapter1Screen implements Screen {
             pendingItemId = null;
             showInteractionBtn = false;
             interactionBtn.setVisible(false);
-            System.out.println("Предмет собран! " + collectedItems + "/" + totalItems);
             if (collectedItems >= totalItems) {
                 allItemsCollected = true;
                 showAllItemsCollectedMessage();
             }
+            saveProgress();
         }
+    }
+
+    private void saveProgress() {
+        game.saveGameProgress(currentMap, collectedItems);
+        for (Map.Entry<Body, String> entry : itemBodies.entrySet()) {
+            if (!entry.getValue().equals("collected")) {
+                game.prefs.putBoolean("item_" + entry.getValue(), false);
+            } else {
+                game.prefs.putBoolean("item_" + entry.getValue(), true);
+            }
+        }
+        game.prefs.flush();
     }
 
     private void showAllItemsCollectedMessage() {
@@ -281,6 +325,47 @@ public class Chapter1Screen implements Screen {
         table.add(label).center();
         Timer.schedule(new Timer.Task() {
             @Override public void run() { messageStage.clear(); }
+        }, 3);
+    }
+
+    private void showToBeContinuedAndExit() {
+        isTransitioning = true;
+        showInteractionBtn = false;
+        interactionBtn.setVisible(false);
+
+        messageStage.clear();
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.9f);
+        messageStage.addActor(darkBg);
+
+        Table table = new Table();
+        table.setFillParent(true);
+        messageStage.addActor(table);
+
+        Label.LabelStyle titleStyle = new Label.LabelStyle();
+        titleStyle.font = game.titleFont;
+
+        Label.LabelStyle subtitleStyle = new Label.LabelStyle();
+        subtitleStyle.font = game.font;
+
+        Label titleLabel = new Label("ПРОДОЛЖЕНИЕ СЛЕДУЕТ...", titleStyle);
+        titleLabel.setFontScale(1.5f);
+
+        Label subtitleLabel = new Label(game.languageManager.getText("returning_to_menu"), subtitleStyle);
+
+        table.add(titleLabel).center().padBottom(30);
+        table.row();
+        table.add(subtitleLabel).center();
+
+        game.clearSave();
+        game.stopGameMusic();
+
+        Timer.schedule(new Timer.Task() {
+            @Override
+            public void run() {
+                game.setScreen(new StartMenuScreen(game));
+            }
         }, 3);
     }
 
@@ -307,11 +392,15 @@ public class Chapter1Screen implements Screen {
                 isPaused = false;
                 pauseStage.clear();
                 Gdx.input.setInputProcessor(uiStage);
+                if (game.gameMusic != null && game.musicEnabled) game.gameMusic.play();
             }
         });
         TextButton exitBtn = new TextButton("ВЫЙТИ В МЕНЮ", buttonStyle);
         exitBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
+                saveProgress();
+                game.stopGameMusic();
+                game.startMenuMusic();
                 game.setScreen(new StartMenuScreen(game));
             }
         });
@@ -321,15 +410,73 @@ public class Chapter1Screen implements Screen {
         table.add(dialog).center();
     }
 
+    private void showImageForObject(String objectName) {
+        String imagePath = objectName + ".png";
+        try {
+            if (currentImageTexture != null) {
+                currentImageTexture.dispose();
+            }
+            currentImageTexture = new Texture(imagePath);
+            showingImage = true;
+
+            imageStage.clear();
+            Table darkBg = new Table();
+            darkBg.setFillParent(true);
+            darkBg.setColor(0, 0, 0, 0.85f);
+            imageStage.addActor(darkBg);
+
+            Table table = new Table();
+            table.setFillParent(true);
+            imageStage.addActor(table);
+
+            Image displayedImage = new Image(currentImageTexture);
+            float screenW = Gdx.graphics.getWidth();
+            float screenH = Gdx.graphics.getHeight();
+            float imgWidth = currentImageTexture.getWidth();
+            float imgHeight = currentImageTexture.getHeight();
+
+            float scale = Math.min(screenW * 0.8f / imgWidth, screenH * 0.8f / imgHeight);
+            displayedImage.setSize(imgWidth * scale, imgHeight * scale);
+            table.add(displayedImage).center();
+
+            Label.LabelStyle labelStyle = new Label.LabelStyle();
+            labelStyle.font = game.font;
+            Label continueLabel = new Label(game.languageManager.getText("tap_to_continue"), labelStyle);
+            continueLabel.setFontScale(1.2f);
+            table.add(continueLabel).padTop(30).center();
+
+            imageStage.addListener(new ClickListener() {
+                @Override
+                public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+                    hideCurrentImage();
+                    return true;
+                }
+            });
+
+            Gdx.input.setInputProcessor(imageStage);
+
+        } catch (Exception e) {
+            hideCurrentImage();
+        }
+    }
+
+    private void hideCurrentImage() {
+        showingImage = false;
+        imageStage.clear();
+        if (currentImageTexture != null) {
+            currentImageTexture.dispose();
+            currentImageTexture = null;
+        }
+        Gdx.input.setInputProcessor(uiStage);
+    }
+
     private void loadMap(String mapPath) {
         try {
             if (tiledMap != null) tiledMap.dispose();
             tiledMap = new TmxMapLoader().load(mapPath);
             tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
             currentMap = mapPath;
-            System.out.println("Загружена карта: " + mapPath);
         } catch (Exception e) {
-            System.out.println("Ошибка загрузки карты: " + mapPath);
         }
     }
 
@@ -339,30 +486,70 @@ public class Chapter1Screen implements Screen {
             @Override public void beginContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
+
                 if (a == playerBody && itemBodies.containsKey(b) && !itemBodies.get(b).equals("collected")) {
                     pendingItemBody = b; pendingItemId = itemBodies.get(b); pendingDoorId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 } else if (b == playerBody && itemBodies.containsKey(a) && !itemBodies.get(a).equals("collected")) {
                     pendingItemBody = a; pendingItemId = itemBodies.get(a); pendingDoorId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-                if (a == playerBody && isDoor(b)) {
+
+                else if (a == playerBody && isDoor(b)) {
                     pendingDoorId = (String) b.getUserData(); pendingItemBody = null; pendingItemId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 } else if (b == playerBody && isDoor(a)) {
                     pendingDoorId = (String) a.getUserData(); pendingItemBody = null; pendingItemId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
+
+                else if (a == playerBody && interactiveBodies.containsKey(b)) {
+                    pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                    pendingMaBody = null;
+                    pendingInteractiveBody = b;
+                    pendingInteractiveName = interactiveBodies.get(b);
+                    showInteractionBtn = true; interactionBtn.setVisible(true);
+                } else if (b == playerBody && interactiveBodies.containsKey(a)) {
+                    pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                    pendingMaBody = null;
+                    pendingInteractiveBody = a;
+                    pendingInteractiveName = interactiveBodies.get(a);
+                    showInteractionBtn = true; interactionBtn.setVisible(true);
+                }
+
+                else if (a == playerBody && isMaExit(b)) {
+                    if (allItemsCollected) {
+                        pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                        pendingInteractiveBody = null;
+                        pendingMaBody = b;
+                        showInteractionBtn = true; interactionBtn.setVisible(true);
+                    }
+                } else if (b == playerBody && isMaExit(a)) {
+                    if (allItemsCollected) {
+                        pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                        pendingInteractiveBody = null;
+                        pendingMaBody = a;
+                        showInteractionBtn = true; interactionBtn.setVisible(true);
+                    }
+                }
             }
+
             @Override public void endContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
-                if ((a == playerBody && (isDoor(b) || itemBodies.containsKey(b))) ||
-                        (b == playerBody && (isDoor(a) || itemBodies.containsKey(a)))) {
+                if ((a == playerBody && (isDoor(b) || itemBodies.containsKey(b) || interactiveBodies.containsKey(b) || isMaExit(b))) ||
+                        (b == playerBody && (isDoor(a) || itemBodies.containsKey(a) || interactiveBodies.containsKey(a) || isMaExit(a)))) {
                     showInteractionBtn = false; interactionBtn.setVisible(false);
                     pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                    pendingInteractiveBody = null; pendingInteractiveName = null;
+                    pendingMaBody = null;
                 }
             }
+
             @Override public void preSolve(Contact c, Manifold m) {}
             @Override public void postSolve(Contact c, ContactImpulse i) {}
         });
@@ -371,6 +558,11 @@ public class Chapter1Screen implements Screen {
     private boolean isDoor(Body body) {
         Object data = body.getUserData();
         return data instanceof String && ((String) data).startsWith("door_");
+    }
+
+    private boolean isMaExit(Body body) {
+        Object data = body.getUserData();
+        return data instanceof String && ((String) data).equals("ma_exit");
     }
 
     private void teleportToDoor(String doorId) {
@@ -404,6 +596,7 @@ public class Chapter1Screen implements Screen {
                 Vector2 spawnPos = findSpawnPosition(finalSpawnId);
                 if (spawnPos != null) playerBody.setTransform(spawnPos.x, spawnPos.y, 0);
                 isTransitioning = false;
+                saveProgress();
             }
         }, 0.1f);
     }
@@ -446,30 +639,70 @@ public class Chapter1Screen implements Screen {
             @Override public void beginContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
+
                 if (a == playerBody && itemBodies.containsKey(b) && !itemBodies.get(b).equals("collected")) {
                     pendingItemBody = b; pendingItemId = itemBodies.get(b); pendingDoorId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 } else if (b == playerBody && itemBodies.containsKey(a) && !itemBodies.get(a).equals("collected")) {
                     pendingItemBody = a; pendingItemId = itemBodies.get(a); pendingDoorId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-                if (a == playerBody && isDoor(b)) {
+
+                else if (a == playerBody && isDoor(b)) {
                     pendingDoorId = (String) b.getUserData(); pendingItemBody = null; pendingItemId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 } else if (b == playerBody && isDoor(a)) {
                     pendingDoorId = (String) a.getUserData(); pendingItemBody = null; pendingItemId = null;
+                    pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
+
+                else if (a == playerBody && interactiveBodies.containsKey(b)) {
+                    pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                    pendingMaBody = null;
+                    pendingInteractiveBody = b;
+                    pendingInteractiveName = interactiveBodies.get(b);
+                    showInteractionBtn = true; interactionBtn.setVisible(true);
+                } else if (b == playerBody && interactiveBodies.containsKey(a)) {
+                    pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                    pendingMaBody = null;
+                    pendingInteractiveBody = a;
+                    pendingInteractiveName = interactiveBodies.get(a);
+                    showInteractionBtn = true; interactionBtn.setVisible(true);
+                }
+
+                else if (a == playerBody && isMaExit(b)) {
+                    if (allItemsCollected) {
+                        pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                        pendingInteractiveBody = null;
+                        pendingMaBody = b;
+                        showInteractionBtn = true; interactionBtn.setVisible(true);
+                    }
+                } else if (b == playerBody && isMaExit(a)) {
+                    if (allItemsCollected) {
+                        pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                        pendingInteractiveBody = null;
+                        pendingMaBody = a;
+                        showInteractionBtn = true; interactionBtn.setVisible(true);
+                    }
+                }
             }
+
             @Override public void endContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
-                if ((a == playerBody && (isDoor(b) || itemBodies.containsKey(b))) ||
-                        (b == playerBody && (isDoor(a) || itemBodies.containsKey(a)))) {
+                if ((a == playerBody && (isDoor(b) || itemBodies.containsKey(b) || interactiveBodies.containsKey(b) || isMaExit(b))) ||
+                        (b == playerBody && (isDoor(a) || itemBodies.containsKey(a) || interactiveBodies.containsKey(a) || isMaExit(a)))) {
                     showInteractionBtn = false; interactionBtn.setVisible(false);
                     pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
+                    pendingInteractiveBody = null; pendingInteractiveName = null;
+                    pendingMaBody = null;
                 }
             }
+
             @Override public void preSolve(Contact c, Manifold m) {}
             @Override public void postSolve(Contact c, ContactImpulse i) {}
         });
@@ -573,19 +806,56 @@ public class Chapter1Screen implements Screen {
             }
         }
 
-        // ===== УСТАНОВКА ПОЗИЦИИ СПАВНА =====
+        for (int i = 1; i <= 10; i++) {
+            String layerName = "z" + i;
+            MapLayer zLayer = tiledMap.getLayers().get(layerName);
+            if (zLayer != null) {
+                for (MapObject obj : zLayer.getObjects()) {
+                    Rectangle rect = getObjectRectangle(obj);
+                    if (rect == null) continue;
+
+                    BodyDef def = new BodyDef();
+                    def.type = BodyDef.BodyType.StaticBody;
+                    def.position.set((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
+                    Body body = world.createBody(def);
+                    PolygonShape shape = new PolygonShape();
+                    shape.setAsBox(rect.width/2 / PPM, rect.height/2 / PPM);
+                    Fixture fix = body.createFixture(shape, 0);
+                    fix.setSensor(true);
+                    shape.dispose();
+                    body.setUserData("interactive_" + layerName);
+                    interactiveBodies.put(body, layerName);
+                }
+            }
+        }
+
+        MapLayer maLayer = tiledMap.getLayers().get("ma");
+        if (maLayer != null) {
+            for (MapObject obj : maLayer.getObjects()) {
+                Rectangle rect = getObjectRectangle(obj);
+                if (rect == null) continue;
+
+                BodyDef def = new BodyDef();
+                def.type = BodyDef.BodyType.StaticBody;
+                def.position.set((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
+                Body body = world.createBody(def);
+                PolygonShape shape = new PolygonShape();
+                shape.setAsBox(rect.width/2 / PPM, rect.height/2 / PPM);
+                Fixture fix = body.createFixture(shape, 0);
+                fix.setSensor(true);
+                shape.dispose();
+                body.setUserData("ma_exit");
+            }
+        }
+
         boolean spawnSet = false;
 
-// ОСОБЫЕ КООРДИНАТЫ ДЛЯ КОМНАТЫ 4
         if (currentMap.equals("room4.tmx")) {
-
             float spawnX = 273f / PPM;
             float spawnY = 268f / PPM;
             playerBody.setTransform(spawnX, spawnY, 0);
             spawnSet = true;
-            System.out.println("Спавн в комнате 4: " + spawnX + ", " + spawnY + " (пиксели: 273,268)");
         }
-
 
         if (!spawnSet && startSpawnId != null) {
             for (MapLayer layer : tiledMap.getLayers()) {
@@ -608,9 +878,7 @@ public class Chapter1Screen implements Screen {
             }
         }
 
-        // Если всё ещё не нашли - центр комнаты
         if (!spawnSet) {
-            // Находим центр по collision слою
             float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
             if (collisionLayer != null) {
                 for (MapObject obj : collisionLayer.getObjects()) {
@@ -627,10 +895,8 @@ public class Chapter1Screen implements Screen {
                 float centerX = (minX + maxX) / 2 / PPM;
                 float centerY = (minY + maxY) / 2 / PPM;
                 playerBody.setTransform(centerX, centerY, 0);
-                System.out.println("Спавн в центр комнаты (по collision): " + centerX + ", " + centerY);
             } else {
                 playerBody.setTransform(640 / PPM, 360 / PPM, 0);
-                System.out.println("Спавн в центр (640,360)");
             }
         }
     }
@@ -650,7 +916,8 @@ public class Chapter1Screen implements Screen {
     }
 
     private void update(float delta) {
-        if (isPaused || isTransitioning) return;
+        if (isPaused || isTransitioning || showingImage) return;
+
         Vector2 vel = playerBody.getLinearVelocity();
         float velX = 0, velY = 0;
         if (movingRight) velX = speed;
@@ -669,6 +936,12 @@ public class Chapter1Screen implements Screen {
         Vector2 pos = playerBody.getPosition();
         camera.position.set(pos.x * PPM, pos.y * PPM, 0);
         camera.update();
+
+        saveTimer += delta;
+        if (saveTimer >= SAVE_INTERVAL) {
+            saveTimer = 0f;
+            saveProgress();
+        }
     }
 
     private void drawPlayer() {
@@ -677,7 +950,7 @@ public class Chapter1Screen implements Screen {
         else if (movingRight) region = walkRightAnimation.getKeyFrame(stateTime, true);
         else region = facingRight ? standRight : standLeft;
         Vector2 pos = playerBody.getPosition();
-        float size = 64f; // Увеличенный размер персонажа
+        float size = 64f;
         batch.draw(region, pos.x * PPM - size/2, pos.y * PPM - size/2, size, size);
     }
 
@@ -696,7 +969,8 @@ public class Chapter1Screen implements Screen {
         uiStage.act(delta);
         uiStage.draw();
         if (isPaused) { pauseStage.act(delta); pauseStage.draw(); }
-        if (allItemsCollected) { messageStage.act(delta); messageStage.draw(); }
+        if (allItemsCollected && !showingImage) { messageStage.act(delta); messageStage.draw(); }
+        if (showingImage) { imageStage.act(delta); imageStage.draw(); }
     }
 
     @Override public void resize(int width, int height) {
@@ -706,20 +980,31 @@ public class Chapter1Screen implements Screen {
         uiStage.getViewport().update(width, height, true);
         pauseStage.getViewport().update(width, height, true);
         messageStage.getViewport().update(width, height, true);
+        if (imageStage != null) imageStage.getViewport().update(width, height, true);
         int btnSize = 100, pauseSize = 70;
-        if (upBtn != null) upBtn.setPosition(width / 2 - btnSize / 2, 30 + btnSize + 20);
-        if (downBtn != null) downBtn.setPosition(width / 2 - btnSize / 2, 30);
-        if (leftBtn != null) leftBtn.setPosition(width / 2 - btnSize - 20, 30 + btnSize / 2);
-        if (rightBtn != null) rightBtn.setPosition(width / 2 + 20, 30 + btnSize / 2);
+        if (upBtn != null) upBtn.setPosition(width / 5 - btnSize / 2, 30 + btnSize + 20);
+        if (downBtn != null) downBtn.setPosition(width / 5 - btnSize / 2, 30);
+        if (leftBtn != null) leftBtn.setPosition(width / 5 - btnSize - 20, 30 + btnSize / 2);
+        if (rightBtn != null) rightBtn.setPosition(width / 5 + 20, 30 + btnSize / 2);
         if (pauseBtn != null) pauseBtn.setPosition(width - pauseSize - 20, height - pauseSize - 20);
-        if (interactionBtn != null) interactionBtn.setPosition(width / 2 - 40, height / 2 - 100);
+        if (interactionBtn != null) interactionBtn.setPosition(width / 1 - 200, height / 2 - 200);
         if (itemsLabel != null) itemsLabel.setPosition(20, height - 50);
     }
 
-    @Override public void show() { Gdx.input.setInputProcessor(isPaused ? pauseStage : uiStage); }
-    @Override public void hide() {}
+    @Override public void show() {
+        Gdx.input.setInputProcessor(isPaused ? pauseStage : uiStage);
+        game.stopMenuMusic();
+        game.startGameMusic();
+    }
+
+    @Override public void hide() {
+        game.stopGameMusic();
+    }
+
     @Override public void dispose() {
         uiStage.dispose(); pauseStage.dispose(); messageStage.dispose();
+        if (imageStage != null) imageStage.dispose();
+        if (currentImageTexture != null) currentImageTexture.dispose();
         if (world != null) world.dispose();
         if (tiledMap != null) tiledMap.dispose();
         if (tiledMapRenderer != null) tiledMapRenderer.dispose();

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="40" height="26" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="21">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="40" height="26" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="22">
  <tileset firstgid="1" name="room9" tilewidth="32" tileheight="32" tilecount="1040" columns="40">
   <image source="room9.jpg" width="1280" height="853"/>
  </tileset>
@@ -37,9 +37,6 @@
   <object id="1" x="850" y="326">
    <polygon points="0,0 374,2 426,6 426,184 -4,190"/>
   </object>
-  <object id="2" x="514" y="298">
-   <polygon points="0,0 226,-6 250,26 252,212 206,246 22,240 -4,204"/>
-  </object>
   <object id="7" x="824" y="584" width="352" height="132"/>
   <object id="8" x="1234" y="494" width="52" height="338"/>
   <object id="9" x="-2" y="706" width="1298" height="134"/>
@@ -51,6 +48,7 @@
   <object id="18" x="1236" y="258" width="42" height="98"/>
   <object id="19" x="-6" y="486" width="46" height="118"/>
   <object id="20" x="552" y="658" width="178" height="90"/>
+  <object id="21" x="516.767" y="289.059" width="241.866" height="247.765"/>
  </objectgroup>
  <objectgroup id="3" name="start">
   <object id="12" name="start_9" x="580" y="212" width="112" height="28"/>

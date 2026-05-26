@@ -30,10 +30,11 @@ public class LanguageManager {
     private void loadTranslations() {
         translations = new HashMap<>();
 
-        // Русский язык
         Map<String, String> ru = new HashMap<>();
         ru.put("settings", "НАСТРОЙКИ");
         ru.put("start", "СТАРТ");
+        ru.put("continue", "ПРОДОЛЖИТЬ");
+        ru.put("new_game", "НОВАЯ ИГРА");
         ru.put("social", "СОЦСЕТИ");
         ru.put("exit", "ВЫХОД");
         ru.put("music_volume", "ГРОМКОСТЬ МУЗЫКИ");
@@ -46,8 +47,6 @@ public class LanguageManager {
         ru.put("russian", "РУССКИЙ");
         ru.put("english", "АНГЛИЙСКИЙ");
         ru.put("choose_action", "ВЫБЕРИТЕ ДЕЙСТВИЕ");
-        ru.put("new_game", "НОВАЯ ИГРА");
-        ru.put("continue", "ПРОДОЛЖИТЬ");
         ru.put("cancel", "ОТМЕНА");
         ru.put("volume", "ГРОМКОСТЬ");
         ru.put("select_language", "ВЫБЕРИТЕ ЯЗЫК");
@@ -58,12 +57,15 @@ public class LanguageManager {
         ru.put("items_collected", "Собрано предметов: %d/5");
         ru.put("chapter2_unlocked", "ГЛАВА 2 РАЗБЛОКИРОВАНА!");
         ru.put("go_to_exit", "Идите к выходу из главы");
+        ru.put("tap_to_continue", "Нажмите для продолжения");
+        ru.put("returning_to_menu", "Возврат в меню...");
         translations.put(RUSSIAN, ru);
 
-        // Английский язык
         Map<String, String> en = new HashMap<>();
         en.put("settings", "SETTINGS");
         en.put("start", "START");
+        en.put("continue", "CONTINUE");
+        en.put("new_game", "NEW GAME");
         en.put("items_collected", "Items collected: %d/5");
         en.put("chapter2_unlocked", "CHAPTER 2 UNLOCKED!");
         en.put("go_to_exit", "Go to the chapter exit");
@@ -79,8 +81,6 @@ public class LanguageManager {
         en.put("russian", "RUSSIAN");
         en.put("english", "ENGLISH");
         en.put("choose_action", "CHOOSE ACTION");
-        en.put("new_game", "NEW GAME");
-        en.put("continue", "CONTINUE");
         en.put("cancel", "CANCEL");
         en.put("volume", "VOLUME");
         en.put("select_language", "SELECT LANGUAGE");
@@ -88,6 +88,8 @@ public class LanguageManager {
         en.put("required_items", "Parts: %d/%d");
         en.put("game_over", "GAME OVER");
         en.put("level_complete", "LEVEL COMPLETE");
+        en.put("tap_to_continue", "Tap to continue");
+        en.put("returning_to_menu", "Returning to menu...");
         translations.put(ENGLISH, en);
     }
 
@@ -109,7 +111,6 @@ public class LanguageManager {
             prefs.putString("language", language);
             prefs.putBoolean("firstLaunch", false);
             prefs.flush();
-            System.out.println("Язык изменен на: " + language);
         }
     }
 

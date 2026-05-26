@@ -15,6 +15,7 @@ public class TheFateGame extends Game {
     public BitmapFont font;
     public BitmapFont titleFont;
     public Music menuMusic;
+    public Music gameMusic;
     public static int SCREEN_WIDTH;
     public static int SCREEN_HEIGHT;
 
@@ -39,7 +40,10 @@ public class TheFateGame extends Game {
             menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu.mp3"));
             menuMusic.setLooping(true);
             menuMusic.setVolume(volume);
-            if (musicEnabled) menuMusic.play();
+
+            gameMusic = Gdx.audio.newMusic(Gdx.files.internal("game.mp3"));
+            gameMusic.setLooping(true);
+            gameMusic.setVolume(volume);
         } catch (Exception e) {}
 
         SCREEN_WIDTH = Gdx.graphics.getWidth();
@@ -67,6 +71,32 @@ public class TheFateGame extends Game {
         }
     }
 
+    public void stopGameMusic() {
+        if (gameMusic != null && gameMusic.isPlaying()) {
+            gameMusic.stop();
+        }
+    }
+
+    public void startGameMusic() {
+        if (gameMusic != null && musicEnabled && !gameMusic.isPlaying()) {
+            gameMusic.play();
+            gameMusic.setVolume(volume);
+        }
+    }
+
+    public void stopMenuMusic() {
+        if (menuMusic != null && menuMusic.isPlaying()) {
+            menuMusic.stop();
+        }
+    }
+
+    public void startMenuMusic() {
+        if (menuMusic != null && musicEnabled && !menuMusic.isPlaying()) {
+            menuMusic.play();
+            menuMusic.setVolume(volume);
+        }
+    }
+
     public boolean isFirstLaunch() {
         return isFirstLaunch;
     }
@@ -74,6 +104,32 @@ public class TheFateGame extends Game {
     public void setFirstLaunchComplete() {
         isFirstLaunch = false;
         prefs.putBoolean("firstLaunch", false);
+        prefs.flush();
+    }
+
+    public void saveGameProgress(String currentMap, int collectedItems) {
+        prefs.putString("saved_map", currentMap);
+        prefs.putInteger("saved_items", collectedItems);
+        prefs.putBoolean("has_save", true);
+        prefs.flush();
+    }
+
+    public boolean hasSaveGame() {
+        return prefs.getBoolean("has_save", false);
+    }
+
+    public String getSavedMap() {
+        return prefs.getString("saved_map", "room3.tmx");
+    }
+
+    public int getSavedItems() {
+        return prefs.getInteger("saved_items", 0);
+    }
+
+    public void clearSave() {
+        prefs.putBoolean("has_save", false);
+        prefs.putString("saved_map", "");
+        prefs.putInteger("saved_items", 0);
         prefs.flush();
     }
 
@@ -96,5 +152,6 @@ public class TheFateGame extends Game {
         font.dispose();
         titleFont.dispose();
         if (menuMusic != null) menuMusic.dispose();
+        if (gameMusic != null) gameMusic.dispose();
     }
 }
