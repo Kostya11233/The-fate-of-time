@@ -1,16 +1,21 @@
-package com.mygdx.game;
+package com.mygdx.game.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.mygdx.game.TheFateGame;
+import com.mygdx.game.Chapter1Screen;
+import com.mygdx.game.Chapter2Screen;
 
 public class StartMenuScreen implements Screen {
     private final TheFateGame game;
@@ -18,20 +23,33 @@ public class StartMenuScreen implements Screen {
     private Texture buttonTexture;
     private Texture backgroundTexture;
     private TextButton continueBtn;
-    private TextButton startBtn;
+    private TextButton newGameBtn;
     private TextButton settingsBtn;
-    private TextButton socBtn;
+    private TextButton socialBtn;
     private TextButton exitBtn;
     private TextButton.TextButtonStyle buttonStyle;
     private GlyphLayout glyphLayout;
 
+    // Адаптивные размеры
+    private float uiScale;
+    private float btnWidth;
+    private float btnHeight;
+
     public StartMenuScreen(TheFateGame game) {
         this.game = game;
-        this.stage = new Stage(new ExtendViewport(1280, 720));
-        glyphLayout = new GlyphLayout();
+        this.stage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.glyphLayout = new GlyphLayout();
+
+        this.uiScale = game.getUIScale();
+        this.btnWidth = 320f * uiScale;
+        this.btnHeight = 70f * uiScale;
+
         loadTextures();
         createStyles();
         createUI();
+
+        game.stopGameMusic();
+        game.startMenuMusic();
     }
 
     private void loadTextures() {
@@ -61,87 +79,98 @@ public class StartMenuScreen implements Screen {
     }
 
     private void createUI() {
-        float w = stage.getViewport().getWorldWidth();
-        float h = stage.getViewport().getWorldHeight();
+        float w = TheFateGame.VIRTUAL_WIDTH;
+        float h = TheFateGame.VIRTUAL_HEIGHT;
 
-        float btnWidth = 300f;
-        float btnHeight = 65f;
-        float centerX = (w - btnWidth) / 2;
+        float centerX = (w - btnWidth / uiScale) / 2 * uiScale;
+        float startY = h / 2 + 80 * uiScale;
+        float stepY = 90f * uiScale;
 
-        float startY = h / 2 + 30;
-        float stepY = 80f;
-
+        // Кнопка ПРОДОЛЖИТЬ
         if (game.hasSaveGame()) {
             continueBtn = new TextButton(game.languageManager.getText("continue"), buttonStyle);
-            continueBtn.setPosition(centerX, startY);
             continueBtn.setSize(btnWidth, btnHeight);
+            continueBtn.setPosition(centerX, startY);
             continueBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
                     String savedMap = game.getSavedMap();
                     int savedItems = game.getSavedItems();
-                    game.prefs.putInteger("chapter1_items", savedItems);
-                    game.prefs.flush();
-                    game.setScreen(new Chapter1Screen(game, savedMap, "spawn"));
+
+                    if (savedMap != null && savedMap.startsWith("lvl")) {
+                        game.prefs.putInteger("chapter2_items", savedItems);
+                        game.setScreen(new Chapter2Screen(game));
+                    } else {
+                        game.prefs.putInteger("chapter1_items", savedItems);
+                        game.setScreen(new Chapter1Screen(game));
+                    }
                 }
             });
             stage.addActor(continueBtn);
         }
 
-        startBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
+        // Кнопка НОВАЯ ИГРА
         float newGameY = game.hasSaveGame() ? startY - stepY : startY;
-        startBtn.setPosition(centerX, newGameY);
-        startBtn.setSize(btnWidth, btnHeight);
-        startBtn.addListener(new ClickListener() {
+        newGameBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
+        newGameBtn.setSize(btnWidth, btnHeight);
+        newGameBtn.setPosition(centerX, newGameY);
+        newGameBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clearSave();
-                game.prefs.putInteger("chapter1_items", 0);
-                game.prefs.flush();
-                game.setScreen(new Chapter1Screen(game, "room3.tmx", "spawn"));
+                game.setScreen(new ChapterSelectScreen(game));
             }
         });
+        stage.addActor(newGameBtn);
 
+        // Кнопка НАСТРОЙКИ
         settingsBtn = new TextButton(game.languageManager.getText("settings"), buttonStyle);
-        settingsBtn.setPosition(centerX, newGameY - stepY);
         settingsBtn.setSize(btnWidth, btnHeight);
+        settingsBtn.setPosition(centerX, newGameY - stepY);
         settingsBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.setScreen(new SettingsScreen(game, StartMenuScreen.this));
             }
         });
+        stage.addActor(settingsBtn);
 
-        socBtn = new TextButton(game.languageManager.getText("social"), buttonStyle);
-        socBtn.setPosition(centerX, newGameY - stepY * 2);
-        socBtn.setSize(btnWidth, btnHeight);
-        socBtn.addListener(new ClickListener() {
+        // Кнопка СОЦСЕТИ
+        socialBtn = new TextButton(game.languageManager.getText("social"), buttonStyle);
+        socialBtn.setSize(btnWidth, btnHeight);
+        socialBtn.setPosition(centerX, newGameY - stepY * 2);
+        socialBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                Gdx.net.openURI("https://t.me/your_channel");
             }
         });
+        stage.addActor(socialBtn);
 
+        // Кнопка ВЫХОД
         exitBtn = new TextButton(game.languageManager.getText("exit"), buttonStyle);
-        exitBtn.setPosition(centerX, newGameY - stepY * 3);
         exitBtn.setSize(btnWidth, btnHeight);
+        exitBtn.setPosition(centerX, newGameY - stepY * 3);
         exitBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 Gdx.app.exit();
             }
         });
-
-        stage.addActor(startBtn);
-        stage.addActor(settingsBtn);
-        stage.addActor(socBtn);
         stage.addActor(exitBtn);
+
+        // Версия игры
+        Label.LabelStyle labelStyle = new Label.LabelStyle();
+        labelStyle.font = game.smallFont;
+        Label versionLabel = new Label("v1.0.0", labelStyle);
+        versionLabel.setPosition(w - 80 * uiScale, 20 * uiScale);
+        stage.addActor(versionLabel);
     }
 
     public void refreshButtonTexts() {
         if (continueBtn != null) continueBtn.setText(game.languageManager.getText("continue"));
-        if (startBtn != null) startBtn.setText(game.languageManager.getText("new_game"));
+        if (newGameBtn != null) newGameBtn.setText(game.languageManager.getText("new_game"));
         if (settingsBtn != null) settingsBtn.setText(game.languageManager.getText("settings"));
-        if (socBtn != null) socBtn.setText(game.languageManager.getText("social"));
+        if (socialBtn != null) socialBtn.setText(game.languageManager.getText("social"));
         if (exitBtn != null) exitBtn.setText(game.languageManager.getText("exit"));
     }
 
@@ -153,10 +182,7 @@ public class StartMenuScreen implements Screen {
         game.batch.begin();
 
         if (backgroundTexture != null) {
-            game.batch.draw(backgroundTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        } else {
-            Gdx.gl.glClearColor(0.1f, 0.1f, 0.2f, 1);
-            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            game.batch.draw(backgroundTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
         }
 
         game.batch.end();
@@ -174,26 +200,37 @@ public class StartMenuScreen implements Screen {
 
     private void drawTitle() {
         String title = "THE FATE OF TIME";
-        float w = Gdx.graphics.getWidth();
-        float h = Gdx.graphics.getHeight();
+        float w = TheFateGame.VIRTUAL_WIDTH;
+        float h = TheFateGame.VIRTUAL_HEIGHT;
 
-        game.titleFont.getData().setScale(0.65f);
+        game.titleFont.getData().setScale(0.7f * uiScale);
         glyphLayout.setText(game.titleFont, title);
         float titleWidth = glyphLayout.width;
         float titleX = (w - titleWidth) / 2;
-        float titleY = h - 65;
+        float titleY = h - 80 * uiScale;
 
+        // Тень
         game.titleFont.setColor(0, 0, 0, 0.5f);
-        game.titleFont.draw(game.batch, title, titleX + 2, titleY - 2);
+        game.titleFont.draw(game.batch, title, titleX + 3 * uiScale, titleY - 3 * uiScale);
+        // Основной текст
         game.titleFont.setColor(1, 0.85f, 0.3f, 1);
         game.titleFont.draw(game.batch, title, titleX, titleY);
+        // Сброс цвета
         game.titleFont.setColor(1, 1, 1, 1);
+        game.titleFont.getData().setScale(1f);
     }
 
     @Override
     public void resize(int width, int height) {
+        game.viewport.update(width, height, true);
         stage.getViewport().update(width, height, true);
-        game.resize(width, height);
+
+        // Обновляем адаптивные размеры
+        uiScale = game.getUIScale();
+        btnWidth = 320f * uiScale;
+        btnHeight = 70f * uiScale;
+
+        // Пересоздаем UI
         stage.clear();
         createUI();
         refreshButtonTexts();

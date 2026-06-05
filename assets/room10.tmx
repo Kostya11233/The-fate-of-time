@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="40" height="26" tilewidth="32" tileheight="32" infinite="0" nextlayerid="6" nextobjectid="26">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="40" height="26" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="45">
  <tileset firstgid="1" name="room10" tilewidth="32" tileheight="32" tilecount="1040" columns="40">
   <image source="room10.jpg" width="1280" height="853"/>
  </tileset>
@@ -53,9 +53,6 @@
   <object id="22" x="437.333" y="396" width="420" height="109.334"/>
   <object id="23" x="401.333" y="390.667" width="68" height="101.333"/>
   <object id="25" x="436" y="329.333" width="386.667" height="98.6667"/>
- </objectgroup>
- <objectgroup id="5" name="item1">
-  <object id="24" x="257.333" y="292" width="96" height="21.3333"/>
  </objectgroup>
  <objectgroup id="3" name="start">
   <object id="19" name="start_10" x="565.333" y="220" width="130.667" height="38.6667"/>

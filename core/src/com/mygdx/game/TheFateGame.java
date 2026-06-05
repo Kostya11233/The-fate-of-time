@@ -8,28 +8,49 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import com.mygdx.game.screens.SplashScreen;
 
 public class TheFateGame extends Game {
     public SpriteBatch batch;
     public OrthographicCamera camera;
+    public Viewport viewport;
     public BitmapFont font;
     public BitmapFont titleFont;
+    public BitmapFont smallFont;
     public Music menuMusic;
     public Music gameMusic;
-    public static int SCREEN_WIDTH;
-    public static int SCREEN_HEIGHT;
+
+    // Виртуальное разрешение (на него ориентируемся при верстке)
+    public static final int VIRTUAL_WIDTH = 1280;
+    public static final int VIRTUAL_HEIGHT = 720;
 
     public Preferences prefs;
     public float volume = 0.7f;
     public boolean musicEnabled = true;
     public LanguageManager languageManager;
 
+    // Коэффициенты масштабирования для разных устройств
+    public float scaleX = 1f;
+    public float scaleY = 1f;
+    public float uiScale = 1f;
+
     private boolean isFirstLaunch;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
+        camera = new OrthographicCamera();
+
+        // Используем FitViewport - сохраняет пропорции, добавляет черные полосы при необходимости
+        viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
+        viewport.apply();
+        camera.position.set(VIRTUAL_WIDTH / 2f, VIRTUAL_HEIGHT / 2f, 0);
+
+        calculateScaling();
         loadFonts();
+
         languageManager = LanguageManager.getInstance();
         prefs = Gdx.app.getPreferences("TheFateGame");
         volume = prefs.getFloat("volume", 0.7f);
@@ -46,28 +67,78 @@ public class TheFateGame extends Game {
             gameMusic.setVolume(volume);
         } catch (Exception e) {}
 
-        SCREEN_WIDTH = Gdx.graphics.getWidth();
-        SCREEN_HEIGHT = Gdx.graphics.getHeight();
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
         setScreen(new SplashScreen(this));
+    }
+
+    private void calculateScaling() {
+        float screenWidth = Gdx.graphics.getWidth();
+        float screenHeight = Gdx.graphics.getHeight();
+
+        scaleX = screenWidth / VIRTUAL_WIDTH;
+        scaleY = screenHeight / VIRTUAL_HEIGHT;
+        uiScale = Math.min(scaleX, scaleY); // Берем меньший коэффициент для UI
+
+        Gdx.app.log("Screen", "Real size: " + screenWidth + "x" + screenHeight);
+        Gdx.app.log("Screen", "Scale: " + scaleX + "x" + scaleY + ", UI Scale: " + uiScale);
+    }
+
+    public float getUIScale() {
+        return uiScale;
+    }
+
+    public int getScaledSize(int originalSize) {
+        return Math.round(originalSize * uiScale);
     }
 
     private void loadFonts() {
         try {
-            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
-            FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-            parameter.size = 30;
-            parameter.characters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789][_!@#$%^&*()_+=-.,/\\|`~:;?\"'";
-            font = generator.generateFont(parameter);
+            // Пробуем загрузить шрифт из нескольких возможных путей
+            String[] fontPaths = {"font.ttf", "fonts/font.ttf", "Font.ttf", "fonts/Font.ttf"};
+            FreeTypeFontGenerator generator = null;
+
+            for (String path : fontPaths) {
+                try {
+                    if (Gdx.files.internal(path).exists()) {
+                        generator = new FreeTypeFontGenerator(Gdx.files.internal(path));
+                        break;
+                    }
+                } catch (Exception e) {}
+            }
+
+            if (generator == null) {
+                // Если шрифт не найден, используем стандартный
+                font = new BitmapFont();
+                titleFont = new BitmapFont();
+                smallFont = new BitmapFont();
+                return;
+            }
+
+            // Основной шрифт
+            FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            param.size = Math.max(24, Math.round(30 * uiScale));
+            param.characters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{};:'\",.<>/?\\|`~";
+            font = generator.generateFont(param);
+
+            // Заголовочный шрифт
             FreeTypeFontGenerator.FreeTypeFontParameter titleParam = new FreeTypeFontGenerator.FreeTypeFontParameter();
-            titleParam.size = 52;
-            titleParam.characters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789][_!@#$%^&*()_+=-.,/\\|`~:;?\"'";
+            titleParam.size = Math.max(36, Math.round(52 * uiScale));
+            titleParam.characters = param.characters;
             titleFont = generator.generateFont(titleParam);
+
+            // Маленький шрифт
+            FreeTypeFontGenerator.FreeTypeFontParameter smallParam = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            smallParam.size = Math.max(16, Math.round(20 * uiScale));
+            smallParam.characters = param.characters;
+            smallFont = generator.generateFont(smallParam);
+
             generator.dispose();
+
         } catch (Exception e) {
+            e.printStackTrace();
+            // Fallback шрифты
             font = new BitmapFont();
             titleFont = new BitmapFont();
+            smallFont = new BitmapFont();
         }
     }
 
@@ -141,9 +212,12 @@ public class TheFateGame extends Game {
 
     @Override
     public void resize(int width, int height) {
-        SCREEN_WIDTH = width;
-        SCREEN_HEIGHT = height;
-        camera.setToOrtho(false, width, height);
+        viewport.update(width, height, true);
+        camera.position.set(VIRTUAL_WIDTH / 2f, VIRTUAL_HEIGHT / 2f, 0);
+        calculateScaling();
+
+        // Перезагружаем шрифты с новым масштабом
+        loadFonts();
     }
 
     @Override
@@ -151,6 +225,7 @@ public class TheFateGame extends Game {
         batch.dispose();
         font.dispose();
         titleFont.dispose();
+        if (smallFont != null) smallFont.dispose();
         if (menuMusic != null) menuMusic.dispose();
         if (gameMusic != null) gameMusic.dispose();
     }

@@ -3,13 +3,14 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.mygdx.game.screens.StartMenuScreen;
 
 public class ChoiceDialog implements Screen {
     private final TheFateGame game;
@@ -42,7 +43,7 @@ public class ChoiceDialog implements Screen {
             @Override public void clicked(InputEvent e, float x, float y) {
                 game.prefs.putInteger("chapter1_items", 0);
                 game.prefs.flush();
-                game.setScreen(new Chapter1Screen(game, "room3.tmx", "spawn"));
+                game.setScreen(new com.mygdx.game.Chapter1Screen(game));
             }
         });
         TextButton cancelBtn = new TextButton(game.languageManager.getText("cancel"), buttonStyle);

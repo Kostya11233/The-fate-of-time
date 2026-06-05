@@ -30,6 +30,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.mygdx.game.screens.StartMenuScreen;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +43,7 @@ public class Chapter1Screen implements Screen {
     private World world;
     private static final float PPM = 32f;
     private static final float ZOOM = 3.0f;
+    private static final float GRAVITY = 0f;
 
     private Body playerBody;
     private TextureRegion[] walkRightFrames;
@@ -88,6 +90,11 @@ public class Chapter1Screen implements Screen {
     private float saveTimer = 0f;
     private static final float SAVE_INTERVAL = 5f;
 
+    // Адаптивные размеры
+    private float uiScale;
+    private int btnSize;
+    private int pauseSize;
+
     public Chapter1Screen(TheFateGame game) {
         this(game, "room3.tmx", "spawn");
     }
@@ -99,12 +106,21 @@ public class Chapter1Screen implements Screen {
         this.currentMap = startMap;
         this.batch = game.batch;
         this.camera = new OrthographicCamera();
-        this.camera.setToOrtho(false, 1280 / ZOOM, 720 / ZOOM);
+
+        // Адаптивные размеры
+        this.uiScale = game.getUIScale();
+        this.btnSize = game.getScaledSize(100);
+        this.pauseSize = game.getScaledSize(70);
+
+        float worldWidth = TheFateGame.VIRTUAL_WIDTH / ZOOM;
+        float worldHeight = TheFateGame.VIRTUAL_HEIGHT / ZOOM;
+        this.camera.setToOrtho(false, worldWidth, worldHeight);
         this.camera.zoom = ZOOM;
-        this.uiStage = new Stage(new ExtendViewport(1280, 720));
-        this.pauseStage = new Stage(new ExtendViewport(1280, 720));
-        this.messageStage = new Stage(new ExtendViewport(1280, 720));
-        this.imageStage = new Stage(new ExtendViewport(1280, 720));
+
+        this.uiStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.pauseStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.messageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.imageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
 
         collectedItems = game.prefs.getInteger("chapter1_items", 0);
         allItemsCollected = collectedItems >= totalItems;
@@ -140,13 +156,6 @@ public class Chapter1Screen implements Screen {
         } catch (Exception e) {
             Texture fallback = createFallbackTexture(0.5f, 0.5f, 0.5f);
             standRight = standLeft = new TextureRegion(fallback);
-            walkRightFrames = walkLeftFrames = new TextureRegion[4];
-            for (int i = 0; i < 4; i++) {
-                walkRightFrames[i] = new TextureRegion(fallback);
-                walkLeftFrames[i] = new TextureRegion(fallback);
-            }
-            walkRightAnimation = new Animation<TextureRegion>(0.12f, walkRightFrames);
-            walkLeftAnimation = new Animation<TextureRegion>(0.12f, walkLeftFrames);
         }
 
         upTex = loadTextureWithFallback("button/button_up.png", 0.2f, 0.8f, 0.2f);
@@ -172,54 +181,65 @@ public class Chapter1Screen implements Screen {
     }
 
     private void createUI() {
-        int btnSize = 100;
-        int pauseSize = 70;
-        float screenW = Gdx.graphics.getWidth();
-        float screenH = Gdx.graphics.getHeight();
+        float screenW = TheFateGame.VIRTUAL_WIDTH;
+        float screenH = TheFateGame.VIRTUAL_HEIGHT;
 
+        float btnMargin = 20 * uiScale;
+        float btnBottomY = 30 * uiScale;
+        float btnAreaCenter = screenW / 5;
+
+        // Up button
         upBtn = new ImageButton(new TextureRegionDrawable(upTex));
         upBtn.setSize(btnSize, btnSize);
-        upBtn.setPosition(screenW / 2 - btnSize / 2, 30 + btnSize + 20);
+        upBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY + btnSize + btnMargin);
         upBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage) movingUp = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingUp = true;
+                return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingUp = false; }
         });
 
+        // Down button
         downBtn = new ImageButton(new TextureRegionDrawable(downTex));
         downBtn.setSize(btnSize, btnSize);
-        downBtn.setPosition(screenW / 2 - btnSize / 2, 30);
+        downBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY);
         downBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage) movingDown = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingDown = true;
+                return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingDown = false; }
         });
 
+        // Left button
         leftBtn = new ImageButton(new TextureRegionDrawable(leftTex));
         leftBtn.setSize(btnSize, btnSize);
-        leftBtn.setPosition(screenW / 2 - btnSize - 20, 30 + btnSize / 2);
+        leftBtn.setPosition(btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2);
         leftBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage) movingLeft = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingLeft = true;
+                return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingLeft = false; }
         });
 
+        // Right button
         rightBtn = new ImageButton(new TextureRegionDrawable(rightTex));
         rightBtn.setSize(btnSize, btnSize);
-        rightBtn.setPosition(screenW / 2 + 20, 30 + btnSize / 2);
+        rightBtn.setPosition(btnAreaCenter + btnMargin, btnBottomY + btnSize/2);
         rightBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage) movingRight = true; return true;
+                if (!isPaused && !isTransitioning && !showingImage) movingRight = true;
+                return true;
             }
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingRight = false; }
         });
 
+        // Pause button
         pauseBtn = new ImageButton(new TextureRegionDrawable(pauseTex));
         pauseBtn.setSize(pauseSize, pauseSize);
-        pauseBtn.setPosition(screenW - pauseSize - 20, screenH - pauseSize - 20);
+        pauseBtn.setPosition(screenW - pauseSize - 20 * uiScale, screenH - pauseSize - 20 * uiScale);
         pauseBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 if (!showingImage) {
@@ -231,9 +251,10 @@ public class Chapter1Screen implements Screen {
             }
         });
 
+        // Interaction button
         interactionBtn = new ImageButton(new TextureRegionDrawable(interactionTex));
-        interactionBtn.setSize(80, 80);
-        interactionBtn.setPosition(screenW / 2 - 40, screenH / 2 - 100);
+        interactionBtn.setSize(game.getScaledSize(80), game.getScaledSize(80));
+        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(40), screenH / 2 - game.getScaledSize(50));
         interactionBtn.setVisible(false);
         interactionBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
@@ -265,10 +286,11 @@ public class Chapter1Screen implements Screen {
         uiStage.addActor(pauseBtn);
         uiStage.addActor(interactionBtn);
 
+        // Items label
         Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.font;
+        labelStyle.font = game.smallFont;
         itemsLabel = new Label("", labelStyle);
-        itemsLabel.setPosition(20, screenH - 50);
+        itemsLabel.setPosition(20 * uiScale, screenH - 50 * uiScale);
         uiStage.addActor(itemsLabel);
         updateItemsLabel();
     }
@@ -292,6 +314,8 @@ public class Chapter1Screen implements Screen {
             if (collectedItems >= totalItems) {
                 allItemsCollected = true;
                 showAllItemsCollectedMessage();
+                game.prefs.putBoolean("chapter2_unlocked", true);
+                game.prefs.flush();
             }
             saveProgress();
         }
@@ -299,13 +323,6 @@ public class Chapter1Screen implements Screen {
 
     private void saveProgress() {
         game.saveGameProgress(currentMap, collectedItems);
-        for (Map.Entry<Body, String> entry : itemBodies.entrySet()) {
-            if (!entry.getValue().equals("collected")) {
-                game.prefs.putBoolean("item_" + entry.getValue(), false);
-            } else {
-                game.prefs.putBoolean("item_" + entry.getValue(), true);
-            }
-        }
         game.prefs.flush();
     }
 
@@ -320,14 +337,26 @@ public class Chapter1Screen implements Screen {
         messageStage.addActor(table);
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.titleFont;
-        Label label = new Label("ВСЕ ПРЕДМЕТЫ СОБРАНЫ!", labelStyle);
-        label.setFontScale(1.8f);
-        table.add(label).center();
+        labelStyle.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
+        Label label = new Label(game.languageManager.getText("all_items_collected"), labelStyle);
+        label.setFontScale(1.5f);
+
+        Label.LabelStyle subtitleStyle = new Label.LabelStyle();
+        subtitleStyle.font = game.font;
+        subtitleStyle.fontColor = com.badlogic.gdx.graphics.Color.YELLOW;
+        Label subtitle = new Label("Идите к Ма для перехода в Главу 2", subtitleStyle);
+        subtitle.setFontScale(1.2f);
+
+        table.add(label).center().padBottom(20);
+        table.row();
+        table.add(subtitle).center();
+
         Timer.schedule(new Timer.Task() {
-            @Override public void run() { messageStage.clear(); }
+            @Override public void run() {
+                messageStage.clear();
+            }
         }, 3);
     }
-
     private void showToBeContinuedAndExit() {
         isTransitioning = true;
         showInteractionBtn = false;
@@ -345,28 +374,42 @@ public class Chapter1Screen implements Screen {
 
         Label.LabelStyle titleStyle = new Label.LabelStyle();
         titleStyle.font = game.titleFont;
+        titleStyle.fontColor = com.badlogic.gdx.graphics.Color.GOLD;
 
         Label.LabelStyle subtitleStyle = new Label.LabelStyle();
         subtitleStyle.font = game.font;
+        subtitleStyle.fontColor = com.badlogic.gdx.graphics.Color.WHITE;
 
-        Label titleLabel = new Label("ПРОДОЛЖЕНИЕ СЛЕДУЕТ...", titleStyle);
-        titleLabel.setFontScale(1.5f);
+        Label titleLabel = new Label("ГЛАВА 1 ПРОЙДЕНА!", titleStyle);
+        titleLabel.setFontScale(1.8f);
 
-        Label subtitleLabel = new Label(game.languageManager.getText("returning_to_menu"), subtitleStyle);
+        Label subtitleLabel = new Label("Открыта Глава 2!", subtitleStyle);
+        subtitleLabel.setFontScale(1.2f);
 
-        table.add(titleLabel).center().padBottom(30);
+        Label loadingLabel = new Label("Загрузка...", subtitleStyle);
+        loadingLabel.setFontScale(1f);
+
+        table.add(titleLabel).center().padBottom(20);
         table.row();
-        table.add(subtitleLabel).center();
+        table.add(subtitleLabel).center().padBottom(10);
+        table.row();
+        table.add(loadingLabel).center();
 
         game.clearSave();
         game.stopGameMusic();
 
+        // Сохраняем что 2 глава разблокирована
+        game.prefs.putBoolean("chapter2_unlocked", true);
+        game.prefs.flush();
+
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-                game.setScreen(new StartMenuScreen(game));
+                messageStage.clear();
+                // Запускаем 2 главу
+                game.setScreen(new com.mygdx.game.Chapter2Screen(game));
             }
-        }, 3);
+        }, 2);
     }
 
     private void createPauseDialog() {
@@ -378,15 +421,17 @@ public class Chapter1Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         pauseStage.addActor(table);
+
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
+
         Table dialog = new Table();
         dialog.pad(30);
-        Label title = new Label("ПАУЗА", labelStyle);
+        Label title = new Label(game.languageManager.getText("game_paused"), labelStyle);
         title.setFontScale(2f);
-        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", buttonStyle);
+        TextButton continueBtn = new TextButton(game.languageManager.getText("continue"), buttonStyle);
         continueBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 isPaused = false;
@@ -395,7 +440,7 @@ public class Chapter1Screen implements Screen {
                 if (game.gameMusic != null && game.musicEnabled) game.gameMusic.play();
             }
         });
-        TextButton exitBtn = new TextButton("ВЫЙТИ В МЕНЮ", buttonStyle);
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_to_menu"), buttonStyle);
         exitBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 saveProgress();
@@ -405,8 +450,8 @@ public class Chapter1Screen implements Screen {
             }
         });
         dialog.add(title).padBottom(40).row();
-        dialog.add(continueBtn).width(250).height(60).padBottom(20).row();
-        dialog.add(exitBtn).width(250).height(60).row();
+        dialog.add(continueBtn).width(game.getScaledSize(250)).height(game.getScaledSize(60)).padBottom(20).row();
+        dialog.add(exitBtn).width(game.getScaledSize(250)).height(game.getScaledSize(60)).row();
         table.add(dialog).center();
     }
 
@@ -430,8 +475,8 @@ public class Chapter1Screen implements Screen {
             imageStage.addActor(table);
 
             Image displayedImage = new Image(currentImageTexture);
-            float screenW = Gdx.graphics.getWidth();
-            float screenH = Gdx.graphics.getHeight();
+            float screenW = TheFateGame.VIRTUAL_WIDTH;
+            float screenH = TheFateGame.VIRTUAL_HEIGHT;
             float imgWidth = currentImageTexture.getWidth();
             float imgHeight = currentImageTexture.getHeight();
 
@@ -481,7 +526,7 @@ public class Chapter1Screen implements Screen {
     }
 
     private void createWorld() {
-        world = new World(new Vector2(0, 0), true);
+        world = new World(new Vector2(0, GRAVITY), true);
         world.setContactListener(new ContactListener() {
             @Override public void beginContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
@@ -496,7 +541,6 @@ public class Chapter1Screen implements Screen {
                     pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-
                 else if (a == playerBody && isDoor(b)) {
                     pendingDoorId = (String) b.getUserData(); pendingItemBody = null; pendingItemId = null;
                     pendingInteractiveBody = null; pendingMaBody = null;
@@ -506,7 +550,6 @@ public class Chapter1Screen implements Screen {
                     pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-
                 else if (a == playerBody && interactiveBodies.containsKey(b)) {
                     pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
                     pendingMaBody = null;
@@ -520,7 +563,6 @@ public class Chapter1Screen implements Screen {
                     pendingInteractiveName = interactiveBodies.get(a);
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-
                 else if (a == playerBody && isMaExit(b)) {
                     if (allItemsCollected) {
                         pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
@@ -634,7 +676,7 @@ public class Chapter1Screen implements Screen {
 
     private void recreateWorld() {
         world.dispose();
-        world = new World(new Vector2(0, 0), true);
+        world = new World(new Vector2(0, GRAVITY), true);
         world.setContactListener(new ContactListener() {
             @Override public void beginContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
@@ -649,7 +691,6 @@ public class Chapter1Screen implements Screen {
                     pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-
                 else if (a == playerBody && isDoor(b)) {
                     pendingDoorId = (String) b.getUserData(); pendingItemBody = null; pendingItemId = null;
                     pendingInteractiveBody = null; pendingMaBody = null;
@@ -659,7 +700,6 @@ public class Chapter1Screen implements Screen {
                     pendingInteractiveBody = null; pendingMaBody = null;
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-
                 else if (a == playerBody && interactiveBodies.containsKey(b)) {
                     pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
                     pendingMaBody = null;
@@ -673,7 +713,6 @@ public class Chapter1Screen implements Screen {
                     pendingInteractiveName = interactiveBodies.get(a);
                     showInteractionBtn = true; interactionBtn.setVisible(true);
                 }
-
                 else if (a == playerBody && isMaExit(b)) {
                     if (allItemsCollected) {
                         pendingDoorId = null; pendingItemBody = null; pendingItemId = null;
@@ -974,21 +1013,27 @@ public class Chapter1Screen implements Screen {
     }
 
     @Override public void resize(int width, int height) {
-        camera.viewportWidth = width / ZOOM;
-        camera.viewportHeight = height / ZOOM;
+        game.viewport.update(width, height, true);
+
+        float worldWidth = game.viewport.getWorldWidth() / ZOOM;
+        float worldHeight = game.viewport.getWorldHeight() / ZOOM;
+        camera.viewportWidth = worldWidth;
+        camera.viewportHeight = worldHeight;
         camera.update();
+
         uiStage.getViewport().update(width, height, true);
         pauseStage.getViewport().update(width, height, true);
         messageStage.getViewport().update(width, height, true);
         if (imageStage != null) imageStage.getViewport().update(width, height, true);
-        int btnSize = 100, pauseSize = 70;
-        if (upBtn != null) upBtn.setPosition(width / 5 - btnSize / 2, 30 + btnSize + 20);
-        if (downBtn != null) downBtn.setPosition(width / 5 - btnSize / 2, 30);
-        if (leftBtn != null) leftBtn.setPosition(width / 5 - btnSize - 20, 30 + btnSize / 2);
-        if (rightBtn != null) rightBtn.setPosition(width / 5 + 20, 30 + btnSize / 2);
-        if (pauseBtn != null) pauseBtn.setPosition(width - pauseSize - 20, height - pauseSize - 20);
-        if (interactionBtn != null) interactionBtn.setPosition(width / 1 - 200, height / 2 - 200);
-        if (itemsLabel != null) itemsLabel.setPosition(20, height - 50);
+
+        // Обновляем адаптивные размеры
+        uiScale = game.getUIScale();
+        btnSize = game.getScaledSize(100);
+        pauseSize = game.getScaledSize(70);
+
+        // Пересоздаем UI
+        uiStage.clear();
+        createUI();
     }
 
     @Override public void show() {
