@@ -20,6 +20,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -41,7 +42,7 @@ public class Chapter2Screen implements Screen {
     private OrthogonalTiledMapRenderer tiledMapRenderer;
     private World world;
     private static final float PPM = 32f;
-    private static final float ZOOM = 3.0f;
+    private static final float ZOOM = 2.5f; // Уменьшил зум для приближения к персонажу
     private static final float GRAVITY = -20f;
 
     private Body playerBody;
@@ -64,7 +65,7 @@ public class Chapter2Screen implements Screen {
     private int collectedItems = 0;
     private int totalItems = 0;
     private boolean allItemsCollected = false;
-    private boolean exitUnlocked = false; // Выход разблокирован только после сбора всех предметов
+    private boolean exitUnlocked = false;
 
     private String[] levelMaps = {"lvl1.tmx", "lvl2.tmx", "lvl3.tmx"};
     private int[] levelItemCount = {2, 3, 2};
@@ -89,16 +90,30 @@ public class Chapter2Screen implements Screen {
     private Array<Body> bodiesToDestroy = new Array<>();
     private Body exitBody = null;
 
+    // Адаптивные размеры
+    private float uiScale;
+    private int btnSize;
+    private int pauseSize;
+
     public Chapter2Screen(TheFateGame game) {
         this.game = game;
         this.batch = game.batch;
         this.camera = new OrthographicCamera();
-        this.camera.setToOrtho(false, 1280 / ZOOM, 720 / ZOOM);
+
+        // Адаптивные размеры
+        this.uiScale = game.getUIScale();
+        this.btnSize = game.getScaledSize(100);
+        this.pauseSize = game.getScaledSize(70);
+
+        float worldWidth = TheFateGame.VIRTUAL_WIDTH / ZOOM;
+        float worldHeight = TheFateGame.VIRTUAL_HEIGHT / ZOOM;
+        this.camera.setToOrtho(false, worldWidth, worldHeight);
         this.camera.zoom = ZOOM;
-        this.uiStage = new Stage(new ExtendViewport(1280, 720));
-        this.pauseStage = new Stage(new ExtendViewport(1280, 720));
-        this.messageStage = new Stage(new ExtendViewport(1280, 720));
-        this.imageStage = new Stage(new ExtendViewport(1280, 720));
+
+        this.uiStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.pauseStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.messageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.imageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
 
         loadTextures();
         createUI();
@@ -155,14 +170,17 @@ public class Chapter2Screen implements Screen {
     }
 
     private void createUI() {
-        int btnSize = 100;
-        int pauseSize = 70;
-        float screenW = Gdx.graphics.getWidth();
-        float screenH = Gdx.graphics.getHeight();
+        float screenW = TheFateGame.VIRTUAL_WIDTH;
+        float screenH = TheFateGame.VIRTUAL_HEIGHT;
 
+        float btnMargin = 20 * uiScale;
+        float btnBottomY = 30 * uiScale;
+        float btnAreaCenter = screenW / 5;
+
+        // Up button - как в 1 главе
         upBtn = new ImageButton(new TextureRegionDrawable(upTex));
         upBtn.setSize(btnSize, btnSize);
-        upBtn.setPosition(screenW / 5 - btnSize / 2, 30 + btnSize + 20);
+        upBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY + btnSize + btnMargin);
         upBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
                 if (!isPaused && !isTransitioning && !isDead) movingUp = true;
@@ -171,9 +189,10 @@ public class Chapter2Screen implements Screen {
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingUp = false; }
         });
 
+        // Down button - как в 1 главе
         downBtn = new ImageButton(new TextureRegionDrawable(downTex));
         downBtn.setSize(btnSize, btnSize);
-        downBtn.setPosition(screenW / 5 - btnSize / 2, 30);
+        downBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY);
         downBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
                 if (!isPaused && !isTransitioning && !isDead) movingDown = true;
@@ -182,9 +201,10 @@ public class Chapter2Screen implements Screen {
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingDown = false; }
         });
 
+        // Left button - как в 1 главе
         leftBtn = new ImageButton(new TextureRegionDrawable(leftTex));
         leftBtn.setSize(btnSize, btnSize);
-        leftBtn.setPosition(screenW / 5 - btnSize - 20, 30 + btnSize / 2);
+        leftBtn.setPosition(btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2);
         leftBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
                 if (!isPaused && !isTransitioning && !isDead) movingLeft = true;
@@ -193,9 +213,10 @@ public class Chapter2Screen implements Screen {
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingLeft = false; }
         });
 
+        // Right button - как в 1 главе
         rightBtn = new ImageButton(new TextureRegionDrawable(rightTex));
         rightBtn.setSize(btnSize, btnSize);
-        rightBtn.setPosition(screenW / 5 + 20, 30 + btnSize / 2);
+        rightBtn.setPosition(btnAreaCenter + btnMargin, btnBottomY + btnSize/2);
         rightBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
                 if (!isPaused && !isTransitioning && !isDead) movingRight = true;
@@ -204,9 +225,10 @@ public class Chapter2Screen implements Screen {
             @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingRight = false; }
         });
 
+        // Jump button - справа внизу (как в 1 главе была бы, но для прыжка)
         jumpBtn = new ImageButton(new TextureRegionDrawable(jumpTex));
         jumpBtn.setSize(btnSize, btnSize);
-        jumpBtn.setPosition(screenW - btnSize - 20, 30);
+        jumpBtn.setPosition(screenW - btnSize - 20 * uiScale, btnBottomY);
         jumpBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -217,9 +239,10 @@ public class Chapter2Screen implements Screen {
             }
         });
 
+        // Pause button - как в 1 главе
         pauseBtn = new ImageButton(new TextureRegionDrawable(pauseTex));
         pauseBtn.setSize(pauseSize, pauseSize);
-        pauseBtn.setPosition(screenW - pauseSize - 20, screenH - pauseSize - 20);
+        pauseBtn.setPosition(screenW - pauseSize - 20 * uiScale, screenH - pauseSize - 20 * uiScale);
         pauseBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 isPaused = true;
@@ -229,15 +252,15 @@ public class Chapter2Screen implements Screen {
             }
         });
 
+        // Interaction button - как в 1 главе
         interactionBtn = new ImageButton(new TextureRegionDrawable(interactionTex));
-        interactionBtn.setSize(80, 80);
-        interactionBtn.setPosition(screenW / 2 - 40, screenH / 2 - 100);
+        interactionBtn.setSize(game.getScaledSize(80), game.getScaledSize(80));
+        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(40), screenH / 2 - game.getScaledSize(50));
         interactionBtn.setVisible(false);
         interactionBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 if (!isPaused && !isTransitioning && showInteractionBtn) {
                     if (pendingDoorId != null && pendingDoorId.equals("exit")) {
-                        // Переход на следующий уровень ТОЛЬКО при нажатии кнопки
                         goToNextLevel();
                     } else if (pendingItemBody != null && pendingItemId != null) {
                         collectItem(pendingItemBody, pendingItemId);
@@ -256,10 +279,12 @@ public class Chapter2Screen implements Screen {
         uiStage.addActor(pauseBtn);
         uiStage.addActor(interactionBtn);
 
+        // Items label - как в 1 главе
         Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.font;
+        labelStyle.font = game.smallFont;
+        labelStyle.fontColor = com.badlogic.gdx.graphics.Color.WHITE;
         itemsLabel = new Label("", labelStyle);
-        itemsLabel.setPosition(20, screenH - 50);
+        itemsLabel.setPosition(20 * uiScale, screenH - 50 * uiScale);
         uiStage.addActor(itemsLabel);
         updateItemsLabel();
     }
@@ -299,6 +324,7 @@ public class Chapter2Screen implements Screen {
         messageStage.addActor(table);
         Label.LabelStyle style = new Label.LabelStyle();
         style.font = game.titleFont;
+        style.fontColor = com.badlogic.gdx.graphics.Color.GOLD;
         Label label = new Label("УРОВЕНЬ " + currentLevel + "\nНужно собрать: " + totalItems + " предметов", style);
         label.setFontScale(1.5f);
         table.add(label).center();
@@ -321,18 +347,15 @@ public class Chapter2Screen implements Screen {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
 
-                // Земля
                 if ((a == playerBody && isGround(b)) || (b == playerBody && isGround(a))) {
                     isGrounded = true;
                 }
 
-                // Трамплин
                 if ((a == playerBody && isJumpPad(b)) || (b == playerBody && isJumpPad(a))) {
                     playerBody.setLinearVelocity(playerBody.getLinearVelocity().x, jumpForce * 1.5f);
                     isGrounded = false;
                 }
 
-                // Предметы - показываем кнопку
                 if (a == playerBody && itemBodies.containsKey(b) && !itemBodies.get(b).equals("collected")) {
                     pendingItemBody = b;
                     pendingItemId = itemBodies.get(b);
@@ -347,7 +370,6 @@ public class Chapter2Screen implements Screen {
                     interactionBtn.setVisible(true);
                 }
 
-                // Выход - показываем кнопку ТОЛЬКО если все предметы собраны
                 if ((a == playerBody && isExit(b) && allItemsCollected) ||
                         (b == playerBody && isExit(a) && allItemsCollected)) {
                     pendingDoorId = "exit";
@@ -357,7 +379,6 @@ public class Chapter2Screen implements Screen {
                     interactionBtn.setVisible(true);
                 }
 
-                // Смерть
                 if ((a == playerBody && isKill(b)) || (b == playerBody && isKill(a))) {
                     dieAndRestart();
                 }
@@ -493,7 +514,7 @@ public class Chapter2Screen implements Screen {
             }
         }
 
-        // Выход - создаем но он будет активен только после сбора всех предметов
+        // Выход
         String exitName = levelExitIds[currentLevel - 1];
         MapLayer exitLayer = tiledMap.getLayers().get(exitName);
         if (exitLayer != null) {
@@ -561,9 +582,6 @@ public class Chapter2Screen implements Screen {
         bodiesToDestroy.add(itemBody);
         itemBodies.put(itemBody, "collected");
 
-        Gdx.app.log("Chapter2", "Item collected: " + collectedItems + "/" + totalItems);
-
-        // Только когда собрали ВСЕ предметы - разблокируем выход
         if (collectedItems >= totalItems && !allItemsCollected) {
             allItemsCollected = true;
             showAllItemsCollectedMessage();
@@ -586,6 +604,7 @@ public class Chapter2Screen implements Screen {
         messageStage.addActor(table);
         Label.LabelStyle style = new Label.LabelStyle();
         style.font = game.titleFont;
+        style.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
         Label label = new Label("ВСЕ ПРЕДМЕТЫ СОБРАНЫ!\nИдите к выходу", style);
         label.setFontScale(1.5f);
         table.add(label).center();
@@ -597,13 +616,10 @@ public class Chapter2Screen implements Screen {
     }
 
     private void goToNextLevel() {
-        Gdx.app.log("Chapter2", "Going to next level from " + currentLevel);
-
         if (currentLevel < 3) {
             currentLevel++;
             loadLevel(currentLevel);
         } else {
-            // Завершение игры после 3 уровня
             completeGame();
         }
     }
@@ -620,6 +636,7 @@ public class Chapter2Screen implements Screen {
         messageStage.addActor(table);
         Label.LabelStyle style = new Label.LabelStyle();
         style.font = game.titleFont;
+        style.fontColor = com.badlogic.gdx.graphics.Color.GOLD;
         Label label = new Label("ПРОДОЛЖЕНИЕ СЛЕДУЕТ...", style);
         label.setFontScale(2f);
         table.add(label).center();
@@ -664,6 +681,7 @@ public class Chapter2Screen implements Screen {
 
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
+        labelStyle.fontColor = com.badlogic.gdx.graphics.Color.WHITE;
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
@@ -689,8 +707,8 @@ public class Chapter2Screen implements Screen {
             }
         });
         dialog.add(title).padBottom(40).row();
-        dialog.add(continueBtn).width(200).height(50).padBottom(20).row();
-        dialog.add(exitBtn).width(200).height(50).row();
+        dialog.add(continueBtn).width(game.getScaledSize(200)).height(game.getScaledSize(50)).padBottom(20).row();
+        dialog.add(exitBtn).width(game.getScaledSize(200)).height(game.getScaledSize(50)).row();
         table.add(dialog).center();
     }
 
@@ -750,32 +768,46 @@ public class Chapter2Screen implements Screen {
     }
 
     @Override public void resize(int width, int height) {
-        camera.viewportWidth = width / ZOOM;
-        camera.viewportHeight = height / ZOOM;
+        game.viewport.update(width, height, true);
+
+        float worldWidth = game.viewport.getWorldWidth() / ZOOM;
+        float worldHeight = game.viewport.getWorldHeight() / ZOOM;
+        camera.viewportWidth = worldWidth;
+        camera.viewportHeight = worldHeight;
         camera.update();
+
         uiStage.getViewport().update(width, height, true);
         pauseStage.getViewport().update(width, height, true);
         messageStage.getViewport().update(width, height, true);
+        if (imageStage != null) imageStage.getViewport().update(width, height, true);
 
-        int btnSize = 100, pauseSize = 70;
-        float screenW = width, screenH = height;
-        if (upBtn != null) upBtn.setPosition(screenW / 5 - btnSize / 2, 30 + btnSize + 20);
-        if (downBtn != null) downBtn.setPosition(screenW / 5 - btnSize / 2, 30);
-        if (leftBtn != null) leftBtn.setPosition(screenW / 5 - btnSize - 20, 30 + btnSize / 2);
-        if (rightBtn != null) rightBtn.setPosition(screenW / 5 + 20, 30 + btnSize / 2);
-        if (jumpBtn != null) jumpBtn.setPosition(width - btnSize - 20, 30);
-        if (pauseBtn != null) pauseBtn.setPosition(width - pauseSize - 20, height - pauseSize - 20);
-        if (interactionBtn != null) interactionBtn.setPosition(width / 2 - 40, height / 2 - 100);
-        if (itemsLabel != null) itemsLabel.setPosition(20, height - 50);
+        // Обновляем адаптивные размеры
+        uiScale = game.getUIScale();
+        btnSize = game.getScaledSize(100);
+        pauseSize = game.getScaledSize(70);
+
+        // Пересоздаем UI
+        uiStage.clear();
+        createUI();
     }
 
-    @Override public void show() { Gdx.input.setInputProcessor(uiStage); game.startGameMusic(); }
+    @Override public void show() {
+        Gdx.input.setInputProcessor(uiStage);
+        game.startGameMusic();
+    }
+
     @Override public void hide() { game.stopGameMusic(); }
+
     @Override public void dispose() {
-        uiStage.dispose(); pauseStage.dispose(); messageStage.dispose();
+        uiStage.dispose();
+        pauseStage.dispose();
+        messageStage.dispose();
+        if (imageStage != null) imageStage.dispose();
         if (world != null) world.dispose();
         if (tiledMap != null) tiledMap.dispose();
+        if (tiledMapRenderer != null) tiledMapRenderer.dispose();
     }
+
     @Override public void pause() {}
     @Override public void resume() {}
 }

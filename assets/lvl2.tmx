@@ -116,6 +116,6 @@
   </object>
  </objectgroup>
  <objectgroup id="9" name="exit22">
-  <object id="59" x="107" y="778" width="47" height="73"/>
+  <object id="59" x="96" y="761" width="58" height="90"/>
  </objectgroup>
 </map>
