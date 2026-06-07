@@ -4,6 +4,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -35,6 +36,7 @@ public class TheFateGame extends Game {
     public float scaleX = 1f;
     public float scaleY = 1f;
     public float uiScale = 1f;
+    public Texture fadeTexture;
 
     private boolean isFirstLaunch;
 

@@ -2,6 +2,7 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -44,6 +45,11 @@ public class Chapter1Screen implements Screen {
     private static final float PPM = 32f;
     private static final float ZOOM = 3.0f;
     private static final float GRAVITY = 0f;
+    private boolean fading = false;
+    private float fadeAlpha = 0f;
+    private Runnable fadeCallback = null;
+    private static final float FADE_DURATION = 0.5f;
+
 
     private Body playerBody;
     private TextureRegion[] walkRightFrames;
@@ -335,28 +341,22 @@ public class Chapter1Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         messageStage.addActor(table);
+
         Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.titleFont;
+        labelStyle.font = game.smallFont; // используем маленький шрифт
         labelStyle.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
         Label label = new Label(game.languageManager.getText("all_items_collected"), labelStyle);
-        label.setFontScale(1.5f);
+        label.setFontScale(1.2f); // меньший масштаб
 
-        Label.LabelStyle subtitleStyle = new Label.LabelStyle();
-        subtitleStyle.font = game.font;
-        subtitleStyle.fontColor = com.badlogic.gdx.graphics.Color.YELLOW;
-        Label subtitle = new Label("Идите к Ма для перехода в Главу 2", subtitleStyle);
-        subtitle.setFontScale(1.2f);
-
-        table.add(label).center().padBottom(20);
-        table.row();
-        table.add(subtitle).center();
+        table.add(label).center();
 
         Timer.schedule(new Timer.Task() {
             @Override public void run() {
                 messageStage.clear();
             }
-        }, 3);
+        }, 2);
     }
+
     private void showToBeContinuedAndExit() {
         isTransitioning = true;
         showInteractionBtn = false;
@@ -407,7 +407,7 @@ public class Chapter1Screen implements Screen {
             public void run() {
                 messageStage.clear();
                 // Запускаем 2 главу
-                game.setScreen(new com.mygdx.game.Chapter2Screen(game));
+                game.setScreen(new com.mygdx.game.screens.Chapter2Screen(game));
             }
         }, 2);
     }
@@ -606,11 +606,28 @@ public class Chapter1Screen implements Screen {
         Object data = body.getUserData();
         return data instanceof String && ((String) data).equals("ma_exit");
     }
-
+    // Добавим методы для fade перехода
+    private void startFadeTransition(Runnable callback) {
+        fading = true;
+        fadeAlpha = 0f;
+        fadeCallback = callback;
+    }
+    private void updateFade(float delta) {
+        if (fading) {
+            fadeAlpha += delta / FADE_DURATION;
+            if (fadeAlpha >= 1f) {
+                fadeAlpha = 1f;
+                if (fadeCallback != null) {
+                    fadeCallback.run();
+                    fadeCallback = null;
+                }
+            }
+        }
+    }
     private void teleportToDoor(String doorId) {
-        isTransitioning = true;
         showInteractionBtn = false;
         interactionBtn.setVisible(false);
+
         String targetMap = null, targetSpawnId = null;
         if (doorId.equals("door_exit")) {
             targetMap = "corid.tmx";
@@ -623,24 +640,34 @@ public class Chapter1Screen implements Screen {
                 returnDoorId = "door" + roomNumber;
             }
         }
+
         if (targetMap == null || targetSpawnId == null) {
-            isTransitioning = false;
             return;
         }
-        final String finalMap = targetMap, finalSpawnId = targetSpawnId, finalReturnDoorId = returnDoorId;
-        Timer.schedule(new Timer.Task() {
-            @Override public void run() {
-                loadMap(finalMap);
-                recreateWorld();
-                createPlayer();
-                createCollisionAndTeleports();
-                returnDoorId = finalReturnDoorId;
-                Vector2 spawnPos = findSpawnPosition(finalSpawnId);
-                if (spawnPos != null) playerBody.setTransform(spawnPos.x, spawnPos.y, 0);
+
+        final String finalMap = targetMap, finalSpawnId = targetSpawnId;
+        final String finalReturnDoorId = returnDoorId;
+
+        // Плавное затухание в черный
+        startFadeTransition(() -> {
+            loadMap(finalMap);
+            recreateWorld();
+            createPlayer();
+            createCollisionAndTeleports();
+            returnDoorId = finalReturnDoorId;
+            Vector2 spawnPos = findSpawnPosition(finalSpawnId);
+            if (spawnPos != null) playerBody.setTransform(spawnPos.x, spawnPos.y, 0);
+            saveProgress();
+
+            // Плавное появление из черного
+            fading = true;
+            fadeAlpha = 1f;
+            fadeCallback = () -> {
+                fading = false;
                 isTransitioning = false;
-                saveProgress();
-            }
-        }, 0.1f);
+            };
+        });
+        isTransitioning = true;
     }
 
     private Vector2 findSpawnPosition(String spawnId) {
@@ -1010,6 +1037,16 @@ public class Chapter1Screen implements Screen {
         if (isPaused) { pauseStage.act(delta); pauseStage.draw(); }
         if (allItemsCollected && !showingImage) { messageStage.act(delta); messageStage.draw(); }
         if (showingImage) { imageStage.act(delta); imageStage.draw(); }
+
+        // Отрисовка fade перехода
+        if (fading) {
+            updateFade(delta);
+            batch.begin();
+            batch.setColor(0, 0, 0, fadeAlpha);
+            batch.draw(game.fadeTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
+            batch.setColor(1, 1, 1, 1);
+            batch.end();
+        }
     }
 
     @Override public void resize(int width, int height) {

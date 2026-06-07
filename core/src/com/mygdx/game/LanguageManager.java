@@ -32,6 +32,7 @@ public class LanguageManager {
 
         Map<String, String> ru = new HashMap<>();
         ru.put("settings", "НАСТРОЙКИ");
+
         ru.put("start", "СТАРТ");
         ru.put("continue", "ПРОДОЛЖИТЬ");
         ru.put("new_game", "НОВАЯ ИГРА");
@@ -82,12 +83,13 @@ public class LanguageManager {
         en.put("continue", "CONTINUE");
         en.put("new_game", "NEW GAME");
         en.put("items_collected", "Items collected: %d/5");
-        en.put("chapter2_unlocked", "CHAPTER 2 UNLOCKED!");
         en.put("go_to_exit", "Go to the chapter exit");
         en.put("social", "SOCIAL");
         en.put("exit", "EXIT");
         en.put("music_volume", "MUSIC VOLUME");
         en.put("music", "MUSIC");
+        en.put("next", "NEXT");
+        en.put("chapter2_unlocked", "CHAPTER 2 UNLOCKED!");
         en.put("game_paused", "GAME PAUSED");
         en.put("restart_level", "RESTART LEVEL");
         en.put("exit_to_menu", "EXIT TO MENU");
