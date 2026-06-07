@@ -27,13 +27,11 @@ public class LanguageChoiceScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
-
 
         Table titleTable = new Table();
         Label titleLabelRu = new Label("ВЫБЕРИТЕ ЯЗЫК", labelStyle);
@@ -43,24 +41,20 @@ public class LanguageChoiceScreen implements Screen {
         titleTable.add(titleLabelRu).padBottom(5).row();
         titleTable.add(titleLabelEn);
 
-
         TextButton ruBtn = new TextButton("РУССКИЙ", buttonStyle);
         ruBtn.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.languageManager.setLanguage(LanguageManager.RUSSIAN);
-                game.setFirstLaunchComplete();
                 game.setScreen(new StartMenuScreen(game));
             }
         });
-
 
         TextButton enBtn = new TextButton("ENGLISH", buttonStyle);
         enBtn.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.languageManager.setLanguage(LanguageManager.ENGLISH);
-                game.setFirstLaunchComplete();
                 game.setScreen(new StartMenuScreen(game));
             }
         });

@@ -12,7 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
 import com.mygdx.game.Chapter1Screen;
-import com.mygdx.game.Chapter2Screen;
+import com.mygdx.game.screens.Chapter2Screen;
 
 public class ChapterSelectScreen implements Screen {
     private final TheFateGame game;
@@ -37,26 +37,19 @@ public class ChapterSelectScreen implements Screen {
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
-        Label titleLabel = new Label(game.languageManager.getText("select_chapter"), labelStyle);
+        Label titleLabel = new Label("ВЫБЕРИТЕ ГЛАВУ", labelStyle);
         titleLabel.setFontScale(1.8f);
 
-        TextButton chapter1Btn = new TextButton(game.languageManager.getText("chapter_1"), buttonStyle);
+        TextButton chapter1Btn = new TextButton("ПЕРВАЯ ГЛАВА", buttonStyle);
         chapter1Btn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
-                game.clearSave();
-                game.prefs.putInteger("chapter1_items", 0);
-                game.prefs.putBoolean("chapter2_unlocked", false);
-                game.prefs.flush();
+                game.clearAllProgress();
                 game.setScreen(new Chapter1Screen(game));
             }
         });
 
-        String chapter2Text = game.languageManager.getText("chapter_2");
-        if (!chapter2Unlocked) {
-            chapter2Text = game.languageManager.getText("chapter_2_locked");
-        }
-
+        String chapter2Text = chapter2Unlocked ? "ВТОРАЯ ГЛАВА" : "ВТОРАЯ ГЛАВА (ЗАКРЫТА)";
         TextButton chapter2Btn = new TextButton(chapter2Text, buttonStyle);
         if (!chapter2Unlocked) {
             chapter2Btn.setDisabled(true);
@@ -66,13 +59,12 @@ public class ChapterSelectScreen implements Screen {
             public void clicked(InputEvent e, float x, float y) {
                 if (chapter2Unlocked) {
                     game.clearSave();
-                    game.prefs.putInteger("chapter2_items", 0);
                     game.setScreen(new Chapter2Screen(game));
                 }
             }
         });
 
-        TextButton backBtn = new TextButton(game.languageManager.getText("back"), buttonStyle);
+        TextButton backBtn = new TextButton("НАЗАД", buttonStyle);
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -81,9 +73,7 @@ public class ChapterSelectScreen implements Screen {
         });
 
         if (!chapter2Unlocked) {
-            Label.LabelStyle infoStyle = new Label.LabelStyle();
-            infoStyle.font = game.font;
-            Label infoLabel = new Label(game.languageManager.getText("complete_chapter1_to_unlock"), infoStyle);
+            Label infoLabel = new Label("Пройдите первую главу, чтобы открыть вторую", new Label.LabelStyle() {{ font = game.font; }});
             infoLabel.setColor(0.7f, 0.7f, 0.2f, 1);
 
             table.add(titleLabel).padBottom(50).row();

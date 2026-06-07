@@ -1,4 +1,4 @@
-package com.mygdx.game;
+package com.mygdx.game.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
@@ -17,10 +17,10 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -30,6 +30,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.mygdx.game.TheFateGame;
 import com.mygdx.game.screens.StartMenuScreen;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class Chapter2Screen implements Screen {
     private OrthogonalTiledMapRenderer tiledMapRenderer;
     private World world;
     private static final float PPM = 32f;
-    private static final float ZOOM = 2.5f; // Уменьшил зум для приближения к персонажу
+    private static final float ZOOM = 2.6f;
     private static final float GRAVITY = -20f;
 
     private Body playerBody;
@@ -52,55 +53,92 @@ public class Chapter2Screen implements Screen {
     private Animation<TextureRegion> walkRightAnimation;
     private Animation<TextureRegion> walkLeftAnimation;
     private float stateTime;
-    private boolean movingUp = false, movingDown = false, movingLeft = false, movingRight = false;
+    private boolean movingLeft = false, movingRight = false;
     private boolean facingRight = true;
-    private float speed = 5f;
-    private float jumpForce = 12f;
+    private float speed = 5.5f;
+    private float jumpForce = 13f;
     private boolean isGrounded = false;
     private String currentMap;
     private boolean isTransitioning = false;
     private boolean isDead = false;
 
     private int currentLevel = 1;
-    private int collectedItems = 0;
-    private int totalItems = 0;
-    private boolean allItemsCollected = false;
     private boolean exitUnlocked = false;
 
     private String[] levelMaps = {"lvl1.tmx", "lvl2.tmx", "lvl3.tmx"};
-    private int[] levelItemCount = {2, 3, 2};
     private String[] levelStartIds = {"start11", "start22", "start33"};
     private String[] levelExitIds = {"exit11", "exit22", "exit33"};
 
     private Stage uiStage;
     private Stage pauseStage;
     private Stage messageStage;
-    private Stage imageStage;
+    private Stage dialogStage;
+    private Stage questStage;
+    private Stage minigameStage;
     private boolean isPaused = false;
     private boolean showInteractionBtn = false;
-    private String pendingDoorId = null;
     private String pendingItemId = null;
     private Body pendingItemBody = null;
     private Body pendingExitBody = null;
-    private ImageButton upBtn, downBtn, leftBtn, rightBtn, jumpBtn, pauseBtn, interactionBtn;
-    private Texture upTex, downTex, leftTex, rightTex, jumpTex, pauseTex, interactionTex;
+    private Body pendingNPCBody = null;
+    private String pendingNPCName = null;
+
+    private ImageButton leftBtn, rightBtn, jumpBtn, pauseBtn, interactionBtn, questBtn;
+    private Texture leftTex, rightTex, jumpTex, pauseTex, interactionTex, questTex;
+    private Texture dialogBgTexture;
+    private Texture trashTexture;
+    private Texture binTexture;
+    private Texture shardTexture;
+    private Texture fadeTexture;
 
     private Label itemsLabel;
     private Map<Body, String> itemBodies = new HashMap<>();
+    private Map<Body, String> interactiveBodies = new HashMap<>();
     private Array<Body> bodiesToDestroy = new Array<>();
     private Body exitBody = null;
 
-    // Адаптивные размеры
+    private boolean trashMinigame = false;
+    private int trashCollected = 0;
+    private int totalTrash = 10;
+    private Array<Vector2> trashPositions;
+    private Vector2 binPos;
+    private boolean draggingTrash = false;
+    private int draggedIndex = -1;
+    private Vector2 dragOffset = new Vector2();
+    private float trashSize = 90f;
+    private float binSize = 110f;
+
+    private boolean shardMinigame = false;
+    private int shardsClicked = 0;
+    private int totalShards = 15;
+    private Array<Vector2> shardPositions;
+    private float shardSize = 80f;
+
+    private int partsCollected = 0;
+    private boolean talkedToChemist = false;
+
+    private boolean showingDialog = false;
+    private String[] dialogLines;
+    private int dialogIndex = 0;
+    private Runnable dialogCallback;
+
+    private boolean fading = false;
+    private float fadeAlpha = 0f;
+    private Runnable fadeCallback = null;
+    private static final float FADE_DURATION = 0.5f;
+
     private float uiScale;
     private int btnSize;
     private int pauseSize;
+
+    private float playerSize = 90f;
+    private float playerRadius = 0.45f;
 
     public Chapter2Screen(TheFateGame game) {
         this.game = game;
         this.batch = game.batch;
         this.camera = new OrthographicCamera();
 
-        // Адаптивные размеры
         this.uiScale = game.getUIScale();
         this.btnSize = game.getScaledSize(100);
         this.pauseSize = game.getScaledSize(70);
@@ -113,7 +151,15 @@ public class Chapter2Screen implements Screen {
         this.uiStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
         this.pauseStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
         this.messageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
-        this.imageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.dialogStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.questStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.minigameStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0, 0, 0, 1);
+        pixmap.fill();
+        fadeTexture = new Texture(pixmap);
+        pixmap.dispose();
 
         loadTextures();
         createUI();
@@ -146,13 +192,16 @@ public class Chapter2Screen implements Screen {
             standRight = standLeft = new TextureRegion(fallback);
         }
 
-        upTex = loadTexture("button/button_up.png", 0.2f, 0.8f, 0.2f);
-        downTex = loadTexture("button/button_down.png", 0.2f, 0.8f, 0.2f);
         leftTex = loadTexture("button/button_left.png", 0.2f, 0.4f, 0.8f);
         rightTex = loadTexture("button/button_right.png", 0.2f, 0.4f, 0.8f);
         jumpTex = loadTexture("button/button_jump.png", 0.2f, 0.8f, 0.2f);
         pauseTex = loadTexture("button/button_pause.png", 0.8f, 0.8f, 0.2f);
         interactionTex = loadTexture("button/button_interaction.png", 0.2f, 0.8f, 0.2f);
+        questTex = loadTexture("button/button_tasks.png", 0.5f, 0.3f, 0.8f);
+        dialogBgTexture = loadTexture("button1.png", 0.2f, 0.2f, 0.3f);
+        trashTexture = loadTexture("my.png", 0.6f, 0.4f, 0.2f);
+        binTexture = loadTexture("corzina.png", 0.3f, 0.6f, 0.3f);
+        shardTexture = loadTexture("os.png", 0.8f, 0.5f, 0.1f);
     }
 
     private Texture loadTexture(String path, float r, float g, float b) {
@@ -172,144 +221,262 @@ public class Chapter2Screen implements Screen {
     private void createUI() {
         float screenW = TheFateGame.VIRTUAL_WIDTH;
         float screenH = TheFateGame.VIRTUAL_HEIGHT;
+        float btnMargin = 25 * uiScale;
+        float btnBottomY = 35 * uiScale;
+        // Кнопки левее - смещаем центр влево
+        float btnAreaCenter = screenW / 4.5f;
 
-        float btnMargin = 20 * uiScale;
-        float btnBottomY = 30 * uiScale;
-        float btnAreaCenter = screenW / 5;
+        leftBtn = createMoveButton(leftTex, btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2, () -> movingLeft = true, () -> movingLeft = false);
+        rightBtn = createMoveButton(rightTex, btnAreaCenter + btnMargin, btnBottomY + btnSize/2, () -> movingRight = true, () -> movingRight = false);
 
-        // Up button - как в 1 главе
-        upBtn = new ImageButton(new TextureRegionDrawable(upTex));
-        upBtn.setSize(btnSize, btnSize);
-        upBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY + btnSize + btnMargin);
-        upBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !isDead) movingUp = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingUp = false; }
-        });
-
-        // Down button - как в 1 главе
-        downBtn = new ImageButton(new TextureRegionDrawable(downTex));
-        downBtn.setSize(btnSize, btnSize);
-        downBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY);
-        downBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !isDead) movingDown = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingDown = false; }
-        });
-
-        // Left button - как в 1 главе
-        leftBtn = new ImageButton(new TextureRegionDrawable(leftTex));
-        leftBtn.setSize(btnSize, btnSize);
-        leftBtn.setPosition(btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2);
-        leftBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !isDead) movingLeft = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingLeft = false; }
-        });
-
-        // Right button - как в 1 главе
-        rightBtn = new ImageButton(new TextureRegionDrawable(rightTex));
-        rightBtn.setSize(btnSize, btnSize);
-        rightBtn.setPosition(btnAreaCenter + btnMargin, btnBottomY + btnSize/2);
-        rightBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !isDead) movingRight = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingRight = false; }
-        });
-
-        // Jump button - справа внизу (как в 1 главе была бы, но для прыжка)
         jumpBtn = new ImageButton(new TextureRegionDrawable(jumpTex));
         jumpBtn.setSize(btnSize, btnSize);
-        jumpBtn.setPosition(screenW - btnSize - 20 * uiScale, btnBottomY);
+        jumpBtn.setPosition(screenW - btnSize - 25 * uiScale, btnBottomY);
         jumpBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent e, float x, float y) {
-                if (!isPaused && !isTransitioning && !isDead && isGrounded) {
+            @Override public void clicked(InputEvent e, float x, float y) {
+                if (!isPaused && !isTransitioning && !isDead && !showingDialog && !trashMinigame && !shardMinigame && isGrounded) {
                     playerBody.setLinearVelocity(playerBody.getLinearVelocity().x, jumpForce);
                     isGrounded = false;
                 }
             }
         });
 
-        // Pause button - как в 1 главе
         pauseBtn = new ImageButton(new TextureRegionDrawable(pauseTex));
         pauseBtn.setSize(pauseSize, pauseSize);
         pauseBtn.setPosition(screenW - pauseSize - 20 * uiScale, screenH - pauseSize - 20 * uiScale);
         pauseBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
-                isPaused = true;
-                createPauseDialog();
-                Gdx.input.setInputProcessor(pauseStage);
-                if (game.gameMusic != null) game.gameMusic.pause();
+                if (!showingDialog && !trashMinigame && !shardMinigame) {
+                    isPaused = true;
+                    createPauseDialog();
+                    Gdx.input.setInputProcessor(pauseStage);
+                    if (game.gameMusic != null) game.gameMusic.pause();
+                }
             }
         });
 
-        // Interaction button - как в 1 главе
+        questBtn = new ImageButton(new TextureRegionDrawable(questTex));
+        questBtn.setSize(pauseSize, pauseSize);
+        questBtn.setPosition(20 * uiScale, screenH - pauseSize - 20 * uiScale);
+        questBtn.addListener(new ClickListener() {
+            @Override public void clicked(InputEvent e, float x, float y) {
+                if (!showingDialog && !trashMinigame && !shardMinigame) showQuestPanel();
+            }
+        });
+
         interactionBtn = new ImageButton(new TextureRegionDrawable(interactionTex));
-        interactionBtn.setSize(game.getScaledSize(80), game.getScaledSize(80));
-        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(40), screenH / 2 - game.getScaledSize(50));
+        interactionBtn.setSize(game.getScaledSize(90), game.getScaledSize(90));
+        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(45), screenH / 2 - game.getScaledSize(60));
         interactionBtn.setVisible(false);
         interactionBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
-                if (!isPaused && !isTransitioning && showInteractionBtn) {
-                    if (pendingDoorId != null && pendingDoorId.equals("exit")) {
-                        goToNextLevel();
-                    } else if (pendingItemBody != null && pendingItemId != null) {
-                        collectItem(pendingItemBody, pendingItemId);
-                    }
+                if (!isPaused && !isTransitioning && showInteractionBtn && !showingDialog && !trashMinigame && !shardMinigame) {
+                    if (pendingNPCBody != null) interactWithNPC();
+                    else if (pendingItemBody != null && pendingItemId != null) collectItem(pendingItemBody, pendingItemId);
+                    else if (pendingExitBody != null && exitUnlocked) goToNextLevel();
                     showInteractionBtn = false;
                     interactionBtn.setVisible(false);
                 }
             }
         });
 
-        uiStage.addActor(upBtn);
-        uiStage.addActor(downBtn);
         uiStage.addActor(leftBtn);
         uiStage.addActor(rightBtn);
         uiStage.addActor(jumpBtn);
         uiStage.addActor(pauseBtn);
+        uiStage.addActor(questBtn);
         uiStage.addActor(interactionBtn);
 
-        // Items label - как в 1 главе
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.smallFont;
-        labelStyle.fontColor = com.badlogic.gdx.graphics.Color.WHITE;
         itemsLabel = new Label("", labelStyle);
-        itemsLabel.setPosition(20 * uiScale, screenH - 50 * uiScale);
+        itemsLabel.setPosition(80 * uiScale, screenH - 50 * uiScale);
         uiStage.addActor(itemsLabel);
         updateItemsLabel();
     }
 
+    private ImageButton createMoveButton(Texture tex, float x, float y, Runnable onDown, Runnable onUp) {
+        ImageButton btn = new ImageButton(new TextureRegionDrawable(tex));
+        btn.setSize(btnSize, btnSize);
+        btn.setPosition(x, y);
+        btn.addListener(new ClickListener() {
+            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
+                if (!isPaused && !isTransitioning && !isDead && !showingDialog && !trashMinigame && !shardMinigame) onDown.run();
+                return true;
+            }
+            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { onUp.run(); }
+        });
+        return btn;
+    }
+
     private void updateItemsLabel() {
-        itemsLabel.setText("Предметы: " + collectedItems + "/" + totalItems);
+        itemsLabel.setText("");
+    }
+
+    private void showQuestPanel() {
+        questStage.clear();
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.85f);
+        questStage.addActor(darkBg);
+
+        Table table = new Table();
+        table.setFillParent(true);
+        questStage.addActor(table);
+
+        Table panel = new Table();
+        if (dialogBgTexture != null) panel.setBackground(new TextureRegionDrawable(dialogBgTexture));
+        panel.pad(30);
+
+        Label title = new Label("ЗАДАНИЯ", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        Table tasks = new Table();
+
+        if (currentLevel == 1) {
+            addTask(tasks, "Поговорить с Выжившим", trashCollected > 0 || exitUnlocked);
+            addTask(tasks, "Собрать мусор (" + trashCollected + "/" + totalTrash + ")", trashCollected >= totalTrash);
+            addTask(tasks, "Идти к выходу", exitUnlocked);
+        } else if (currentLevel == 2) {
+            addTask(tasks, "Поговорить с Химиком", talkedToChemist);
+            addTask(tasks, "Найти запчасти (" + partsCollected + "/3)", partsCollected >= 3);
+            addTask(tasks, "Вернуться к Химику", partsCollected >= 3 && !exitUnlocked);
+            addTask(tasks, "Идти к выходу", exitUnlocked);
+        } else if (currentLevel == 3) {
+            addTask(tasks, "Поговорить с Часовщиком", shardMinigame || shardsClicked > 0);
+            addTask(tasks, "Собрать осколки (" + shardsClicked + "/" + totalShards + ")", shardsClicked >= totalShards);
+            addTask(tasks, "Идти к выходу", exitUnlocked);
+        }
+
+        TextButton closeBtn = new TextButton("ЗАКРЫТЬ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        closeBtn.addListener(new ClickListener() {
+            @Override public void clicked(InputEvent e, float x, float y) {
+                questStage.clear();
+                Gdx.input.setInputProcessor(uiStage);
+            }
+        });
+
+        panel.add(title).padBottom(30).row();
+        panel.add(tasks).padBottom(30).row();
+        panel.add(closeBtn).width(150).height(50);
+        table.add(panel).center();
+        Gdx.input.setInputProcessor(questStage);
+    }
+
+    private void addTask(Table table, String text, boolean completed) {
+        Label.LabelStyle style = new Label.LabelStyle();
+        style.font = game.smallFont;
+        style.fontColor = completed ? com.badlogic.gdx.graphics.Color.GREEN : com.badlogic.gdx.graphics.Color.WHITE;
+        table.add(new Label((completed ? "✓ " : "○ ") + text, style)).padBottom(8).left().row();
+    }
+
+    private void showDialog(String[] lines, Runnable onEnd) {
+        showingDialog = true;
+        dialogLines = lines;
+        dialogIndex = 0;
+        dialogCallback = onEnd;
+        showDialogLine();
+    }
+
+    private void showDialogLine() {
+        dialogStage.clear();
+
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.7f);
+        dialogStage.addActor(darkBg);
+
+        Table table = new Table();
+        table.setFillParent(true);
+        dialogStage.addActor(table);
+
+        Table dialogBox = new Table();
+        if (dialogBgTexture != null) dialogBox.setBackground(new TextureRegionDrawable(dialogBgTexture));
+        dialogBox.pad(20);
+
+        Label textLabel = new Label(dialogLines[dialogIndex], new Label.LabelStyle() {{ font = game.smallFont; }});
+        textLabel.setWrap(true);
+
+        TextButton nextBtn = new TextButton("ДАЛЕЕ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        nextBtn.addListener(new ClickListener() {
+            @Override public void clicked(InputEvent e, float x, float y) {
+                dialogIndex++;
+                if (dialogIndex >= dialogLines.length) closeDialog();
+                else showDialogLine();
+            }
+        });
+
+        dialogBox.add(textLabel).width(500).padBottom(15).row();
+        dialogBox.add(nextBtn).width(120).height(45);
+        table.add(dialogBox).center().bottom().padBottom(80);
+
+        Gdx.input.setInputProcessor(dialogStage);
+    }
+
+    private void closeDialog() {
+        showingDialog = false;
+        dialogStage.clear();
+        Gdx.input.setInputProcessor(uiStage);
+        if (dialogCallback != null) {
+            dialogCallback.run();
+            dialogCallback = null;
+        }
+    }
+
+    private void showMessage(String msg, float duration) {
+        messageStage.clear();
+        Table bg = new Table();
+        bg.setFillParent(true);
+        bg.setColor(0, 0, 0, 0.7f);
+        messageStage.addActor(bg);
+        Table table = new Table();
+        table.setFillParent(true);
+        messageStage.addActor(table);
+        Label label = new Label(msg, new Label.LabelStyle() {{ font = game.smallFont; }});
+        label.setFontScale(1.2f);
+        table.add(label).center();
+        Timer.schedule(new Timer.Task() {
+            @Override public void run() { messageStage.clear(); }
+        }, duration);
+    }
+
+    private void startFade(Runnable callback) {
+        fading = true;
+        fadeAlpha = 0f;
+        fadeCallback = callback;
+    }
+
+    private void updateFade(float delta) {
+        if (fading) {
+            fadeAlpha += delta / FADE_DURATION;
+            if (fadeAlpha >= 1f) {
+                fadeAlpha = 1f;
+                if (fadeCallback != null) {
+                    fadeCallback.run();
+                    fadeCallback = null;
+                }
+            }
+        }
     }
 
     private void loadLevel(int level) {
         currentLevel = level;
         currentMap = levelMaps[level - 1];
-        totalItems = levelItemCount[level - 1];
-        collectedItems = 0;
-        allItemsCollected = false;
         exitUnlocked = false;
         itemBodies.clear();
+        interactiveBodies.clear();
         bodiesToDestroy.clear();
         exitBody = null;
+
+        trashCollected = 0;
+        shardMinigame = false;
+        shardsClicked = 0;
+        partsCollected = 0;
+        talkedToChemist = false;
 
         loadMap(currentMap);
         createWorld();
         createPlayer();
         createCollision();
         updateItemsLabel();
-
         showLevelMessage();
     }
 
@@ -322,11 +489,9 @@ public class Chapter2Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         messageStage.addActor(table);
-        Label.LabelStyle style = new Label.LabelStyle();
-        style.font = game.titleFont;
-        style.fontColor = com.badlogic.gdx.graphics.Color.GOLD;
-        Label label = new Label("УРОВЕНЬ " + currentLevel + "\nНужно собрать: " + totalItems + " предметов", style);
-        label.setFontScale(1.5f);
+        String[] titles = {"УРОВЕНЬ 1\nЗаброшенная лаборатория", "УРОВЕНЬ 2\nЗона экспериментов", "УРОВЕНЬ 3\nХранилище времени"};
+        Label label = new Label(titles[currentLevel - 1], new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        label.setFontScale(1.3f);
         table.add(label).center();
         Timer.schedule(new Timer.Task() {
             @Override public void run() { messageStage.clear(); }
@@ -346,83 +511,57 @@ public class Chapter2Screen implements Screen {
             @Override public void beginContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
-
-                if ((a == playerBody && isGround(b)) || (b == playerBody && isGround(a))) {
-                    isGrounded = true;
-                }
-
+                if ((a == playerBody && isGround(b)) || (b == playerBody && isGround(a))) isGrounded = true;
                 if ((a == playerBody && isJumpPad(b)) || (b == playerBody && isJumpPad(a))) {
                     playerBody.setLinearVelocity(playerBody.getLinearVelocity().x, jumpForce * 1.5f);
                     isGrounded = false;
                 }
-
-                if (a == playerBody && itemBodies.containsKey(b) && !itemBodies.get(b).equals("collected")) {
-                    pendingItemBody = b;
-                    pendingItemId = itemBodies.get(b);
-                    pendingDoorId = null;
-                    showInteractionBtn = true;
-                    interactionBtn.setVisible(true);
-                } else if (b == playerBody && itemBodies.containsKey(a) && !itemBodies.get(a).equals("collected")) {
-                    pendingItemBody = a;
-                    pendingItemId = itemBodies.get(a);
-                    pendingDoorId = null;
-                    showInteractionBtn = true;
-                    interactionBtn.setVisible(true);
-                }
-
-                if ((a == playerBody && isExit(b) && allItemsCollected) ||
-                        (b == playerBody && isExit(a) && allItemsCollected)) {
-                    pendingDoorId = "exit";
+                if ((a == playerBody && interactiveBodies.containsKey(b)) || (b == playerBody && interactiveBodies.containsKey(a))) {
+                    pendingNPCBody = (a == playerBody) ? b : a;
+                    pendingNPCName = interactiveBodies.get(pendingNPCBody);
                     pendingItemBody = null;
-                    pendingItemId = null;
+                    pendingExitBody = null;
                     showInteractionBtn = true;
                     interactionBtn.setVisible(true);
                 }
-
-                if ((a == playerBody && isKill(b)) || (b == playerBody && isKill(a))) {
-                    dieAndRestart();
+                if ((a == playerBody && itemBodies.containsKey(b) && !itemBodies.get(b).equals("collected")) ||
+                        (b == playerBody && itemBodies.containsKey(a) && !itemBodies.get(a).equals("collected"))) {
+                    pendingItemBody = (a == playerBody) ? b : a;
+                    pendingItemId = itemBodies.get(pendingItemBody);
+                    pendingNPCBody = null;
+                    pendingExitBody = null;
+                    showInteractionBtn = true;
+                    interactionBtn.setVisible(true);
                 }
+                if (exitBody != null && ((a == playerBody && b == exitBody) || (b == playerBody && a == exitBody)) && exitUnlocked) {
+                    pendingExitBody = exitBody;
+                    pendingNPCBody = null;
+                    pendingItemBody = null;
+                    showInteractionBtn = true;
+                    interactionBtn.setVisible(true);
+                }
+                if ((a == playerBody && isKill(b)) || (b == playerBody && isKill(a))) dieAndRestart();
             }
-
             @Override public void endContact(Contact contact) {
                 Body a = contact.getFixtureA().getBody();
                 Body b = contact.getFixtureB().getBody();
-
-                if ((a == playerBody && isGround(b)) || (b == playerBody && isGround(a))) {
-                    isGrounded = false;
-                }
-
-                if ((a == playerBody && (itemBodies.containsKey(b) || isExit(b))) ||
-                        (b == playerBody && (itemBodies.containsKey(a) || isExit(a)))) {
+                if ((a == playerBody && (interactiveBodies.containsKey(b) || itemBodies.containsKey(b) || (exitBody != null && b == exitBody))) ||
+                        (b == playerBody && (interactiveBodies.containsKey(a) || itemBodies.containsKey(a) || (exitBody != null && a == exitBody)))) {
                     showInteractionBtn = false;
                     interactionBtn.setVisible(false);
+                    pendingNPCBody = null;
+                    pendingItemBody = null;
+                    pendingExitBody = null;
                 }
             }
-
             @Override public void preSolve(Contact c, Manifold m) {}
             @Override public void postSolve(Contact c, ContactImpulse i) {}
         });
     }
 
-    private boolean isGround(Body body) {
-        Object data = body.getUserData();
-        return data != null && (data.equals("wall") || data.equals("ground"));
-    }
-
-    private boolean isJumpPad(Body body) {
-        Object data = body.getUserData();
-        return data != null && data.equals("jump");
-    }
-
-    private boolean isExit(Body body) {
-        Object data = body.getUserData();
-        return data != null && data.equals("exit");
-    }
-
-    private boolean isKill(Body body) {
-        Object data = body.getUserData();
-        return data != null && data.equals("kill");
-    }
+    private boolean isGround(Body body) { Object data = body.getUserData(); return data != null && (data.equals("wall") || data.equals("ground")); }
+    private boolean isJumpPad(Body body) { Object data = body.getUserData(); return data != null && data.equals("jump"); }
+    private boolean isKill(Body body) { Object data = body.getUserData(); return data != null && data.equals("kill"); }
 
     private void createPlayer() {
         Vector2 spawnPos = findSpawnPosition(levelStartIds[currentLevel - 1]);
@@ -432,12 +571,11 @@ public class Chapter2Screen implements Screen {
         playerBody = world.createBody(def);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(0.25f);
+        shape.setRadius(playerRadius);
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = shape;
         fixtureDef.density = 1f;
         fixtureDef.friction = 0.5f;
-        fixtureDef.restitution = 0f;
         playerBody.createFixture(fixtureDef);
         shape.dispose();
         playerBody.setFixedRotation(true);
@@ -448,9 +586,7 @@ public class Chapter2Screen implements Screen {
             if (layer.getName() != null && layer.getName().equals(spawnId)) {
                 for (MapObject obj : layer.getObjects()) {
                     Rectangle rect = getObjectRectangle(obj);
-                    if (rect != null) {
-                        return new Vector2((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
-                    }
+                    if (rect != null) return new Vector2((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
                 }
             }
         }
@@ -458,7 +594,6 @@ public class Chapter2Screen implements Screen {
     }
 
     private void createCollision() {
-        // Стены
         MapLayer collision = tiledMap.getLayers().get("collision");
         if (collision != null) {
             for (MapObject obj : collision.getObjects()) {
@@ -476,7 +611,6 @@ public class Chapter2Screen implements Screen {
             }
         }
 
-        // Трамплины
         MapLayer jumpLayer = tiledMap.getLayers().get("jump");
         if (jumpLayer != null) {
             for (MapObject obj : jumpLayer.getObjects()) {
@@ -495,7 +629,6 @@ public class Chapter2Screen implements Screen {
             }
         }
 
-        // Убийцы
         MapLayer kill = tiledMap.getLayers().get("kill");
         if (kill != null) {
             for (MapObject obj : kill.getObjects()) {
@@ -514,7 +647,6 @@ public class Chapter2Screen implements Screen {
             }
         }
 
-        // Выход
         String exitName = levelExitIds[currentLevel - 1];
         MapLayer exitLayer = tiledMap.getLayers().get(exitName);
         if (exitLayer != null) {
@@ -534,17 +666,10 @@ public class Chapter2Screen implements Screen {
             }
         }
 
-        // Предметы
-        String[][] itemsByLevel = {
-                {"item11", "item121"},
-                {"item222", "item22", "item2222"},
-                {"item33", "item333"}
-        };
-
-        for (String itemName : itemsByLevel[currentLevel - 1]) {
-            MapLayer itemLayer = tiledMap.getLayers().get(itemName);
-            if (itemLayer != null) {
-                for (MapObject obj : itemLayer.getObjects()) {
+        if (currentLevel == 1) {
+            MapLayer npcLayer = tiledMap.getLayers().get("npc1");
+            if (npcLayer != null) {
+                for (MapObject obj : npcLayer.getObjects()) {
                     Rectangle rect = getObjectRectangle(obj);
                     if (rect == null) continue;
                     BodyDef def = new BodyDef();
@@ -556,7 +681,63 @@ public class Chapter2Screen implements Screen {
                     Fixture fix = body.createFixture(shape, 0);
                     fix.setSensor(true);
                     shape.dispose();
-                    itemBodies.put(body, itemName);
+                    interactiveBodies.put(body, "Выживший");
+                }
+            }
+        } else if (currentLevel == 2) {
+            MapLayer npcLayer = tiledMap.getLayers().get("npc2");
+            if (npcLayer != null) {
+                for (MapObject obj : npcLayer.getObjects()) {
+                    Rectangle rect = getObjectRectangle(obj);
+                    if (rect == null) continue;
+                    BodyDef def = new BodyDef();
+                    def.type = BodyDef.BodyType.StaticBody;
+                    def.position.set((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
+                    Body body = world.createBody(def);
+                    PolygonShape shape = new PolygonShape();
+                    shape.setAsBox(rect.width/2 / PPM, rect.height/2 / PPM);
+                    Fixture fix = body.createFixture(shape, 0);
+                    fix.setSensor(true);
+                    shape.dispose();
+                    interactiveBodies.put(body, "Химик");
+                }
+            }
+            String[] parts = {"item22", "item222", "item2222"};
+            for (String p : parts) {
+                MapLayer layer = tiledMap.getLayers().get(p);
+                if (layer != null) {
+                    for (MapObject obj : layer.getObjects()) {
+                        Rectangle rect = getObjectRectangle(obj);
+                        if (rect == null) continue;
+                        BodyDef def = new BodyDef();
+                        def.type = BodyDef.BodyType.StaticBody;
+                        def.position.set((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
+                        Body body = world.createBody(def);
+                        PolygonShape shape = new PolygonShape();
+                        shape.setAsBox(rect.width/2 / PPM, rect.height/2 / PPM);
+                        Fixture fix = body.createFixture(shape, 0);
+                        fix.setSensor(true);
+                        shape.dispose();
+                        itemBodies.put(body, "part");
+                    }
+                }
+            }
+        } else if (currentLevel == 3) {
+            MapLayer npcLayer = tiledMap.getLayers().get("npc3");
+            if (npcLayer != null) {
+                for (MapObject obj : npcLayer.getObjects()) {
+                    Rectangle rect = getObjectRectangle(obj);
+                    if (rect == null) continue;
+                    BodyDef def = new BodyDef();
+                    def.type = BodyDef.BodyType.StaticBody;
+                    def.position.set((rect.x + rect.width/2) / PPM, (rect.y + rect.height/2) / PPM);
+                    Body body = world.createBody(def);
+                    PolygonShape shape = new PolygonShape();
+                    shape.setAsBox(rect.width/2 / PPM, rect.height/2 / PPM);
+                    Fixture fix = body.createFixture(shape, 0);
+                    fix.setSensor(true);
+                    shape.dispose();
+                    interactiveBodies.put(body, "Часовщик");
                 }
             }
         }
@@ -568,104 +749,335 @@ public class Chapter2Screen implements Screen {
         Float y = obj.getProperties().get("y", Float.class);
         Float w = obj.getProperties().get("width", Float.class);
         Float h = obj.getProperties().get("height", Float.class);
-        if (x != null && y != null) {
-            return new Rectangle(x, y, w != null ? w : 100, h != null ? h : 100);
-        }
+        if (x != null && y != null) return new Rectangle(x, y, w != null ? w : 100, h != null ? h : 100);
         return null;
     }
 
-    private void collectItem(Body itemBody, String itemId) {
-        if (itemBodies.get(itemBody).equals("collected")) return;
+    private void interactWithNPC() {
+        if (currentLevel == 1 && pendingNPCName != null && pendingNPCName.equals("Выживший")) {
+            if (trashCollected >= totalTrash) {
+                showDialog(new String[]{
+                        "Выживший: Спасибо! Ты очистила зону от мусора!",
+                        "Выживший: Чтобы предотвратить аномалию, нужно найти временной объект.",
+                        "Выживший: Иди к выходу! Удачи!"
+                }, () -> {
+                    exitUnlocked = true;
+                    updateItemsLabel();
+                    showMessage("Выход открыт!", 1.5f);
+                });
+            } else {
+                showDialog(new String[]{
+                        "Выживший: Помоги! Нужно собрать мусор в корзину.",
+                        "Перетащи мусор пальцем в корзину. Нужно " + totalTrash + " штук."
+                }, () -> startTrashMinigame());
+            }
+        } else if (currentLevel == 2 && pendingNPCName != null && pendingNPCName.equals("Химик")) {
+            if (partsCollected >= 3) {
+                showDialog(new String[]{
+                        "Химик: Отлично! Все запчасти на месте!",
+                        "Химик: Временной объект, который ты ищешь - это ГИПЕРКУБ.",
+                        "Химик: Иди к выходу!"
+                }, () -> {
+                    exitUnlocked = true;
+                    updateItemsLabel();
+                    showMessage("Выход открыт!", 1.5f);
+                });
+            } else if (talkedToChemist) {
+                showDialog(new String[]{
+                        "Химик: Нужно найти 3 запчасти. Ищи их по лаборатории."
+                }, null);
+            } else {
+                showDialog(new String[]{
+                        "Химик: Эксперимент вышел из-под контроля...",
+                        "Химик: Чтобы остановить аномалию, найди 3 запчасти.",
+                        "Химик: Это ГИПЕРКУБ!"
+                }, () -> {
+                    talkedToChemist = true;
+                    updateItemsLabel();
+                    showMessage("Найди 3 запчасти на карте!", 2f);
+                });
+            }
+        } else if (currentLevel == 3 && pendingNPCName != null && pendingNPCName.equals("Часовщик")) {
+            if (shardsClicked >= totalShards) {
+                showDialog(new String[]{
+                        "Часовщик: Ты собрала все осколки времени!",
+                        "Часовщик: Гиперкуб ждет тебя. Иди к выходу."
+                }, () -> {
+                    exitUnlocked = true;
+                    updateItemsLabel();
+                    showMessage("Выход открыт!", 1.5f);
+                });
+            } else {
+                showDialog(new String[]{
+                        "Часовщик: Время искажено... Нужно собрать осколки.",
+                        "Нажми на все осколки. Их " + totalShards + " штук."
+                }, () -> startShardMinigame());
+            }
+        }
+    }
 
-        collectedItems++;
-        updateItemsLabel();
-        bodiesToDestroy.add(itemBody);
-        itemBodies.put(itemBody, "collected");
+    private void startTrashMinigame() {
+        trashMinigame = true;
+        trashCollected = 0;
+        trashPositions = new Array<>();
+        float w = TheFateGame.VIRTUAL_WIDTH;
+        float h = TheFateGame.VIRTUAL_HEIGHT;
 
-        if (collectedItems >= totalItems && !allItemsCollected) {
-            allItemsCollected = true;
-            showAllItemsCollectedMessage();
+        for (int i = 0; i < totalTrash; i++) {
+            float x = 50 + (float) Math.random() * (w - 100);
+            float y = 100 + (float) Math.random() * (h - 200);
+            trashPositions.add(new Vector2(x, y));
+        }
+        binPos = new Vector2(w * 0.5f, h * 0.12f);
+
+        minigameStage.clear();
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.9f);
+        minigameStage.addActor(darkBg);
+
+        Label title = new Label("СОБЕРИ МУСОР", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        title.setPosition(w / 2 - 150, h - 80);
+        minigameStage.addActor(title);
+
+        final Label counter = new Label("Собрано: 0/" + totalTrash, new Label.LabelStyle() {{ font = game.font; }});
+        counter.setPosition(20, h - 60);
+        minigameStage.addActor(counter);
+
+        TextButton exitBtn = new TextButton("ВЫЙТИ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        exitBtn.setSize(100, 50);
+        exitBtn.setPosition(w - 120, h - 70);
+        exitBtn.addListener(new ClickListener() {
+            @Override public void clicked(InputEvent e, float x, float y) { exitTrashMinigame(); }
+        });
+        minigameStage.addActor(exitBtn);
+
+        minigameStage.getRoot().setUserObject(counter);
+        Gdx.input.setInputProcessor(minigameStage);
+    }
+
+    private void updateTrashMinigame(float delta) {
+        if (!trashMinigame) return;
+
+        Object obj = minigameStage.getRoot().getUserObject();
+        if (obj instanceof Label) {
+            ((Label) obj).setText("Собрано: " + trashCollected + "/" + totalTrash);
         }
 
+        if (Gdx.input.isTouched()) {
+            float screenX = Gdx.input.getX();
+            float screenY = Gdx.input.getY();
+
+            Vector3 stageCoords = minigameStage.getViewport().unproject(new Vector3(screenX, screenY, 0));
+            float touchX = stageCoords.x;
+            float touchY = stageCoords.y;
+
+            if (!draggingTrash) {
+                for (int i = 0; i < trashPositions.size; i++) {
+                    Vector2 p = trashPositions.get(i);
+                    if (p != null && touchX >= p.x - trashSize/2 && touchX <= p.x + trashSize/2 &&
+                            touchY >= p.y - trashSize/2 && touchY <= p.y + trashSize/2) {
+                        draggingTrash = true;
+                        draggedIndex = i;
+                        dragOffset.set(p.x - touchX, p.y - touchY);
+                        break;
+                    }
+                }
+            } else if (draggedIndex >= 0 && draggedIndex < trashPositions.size) {
+                Vector2 p = trashPositions.get(draggedIndex);
+                if (p != null) {
+                    p.set(touchX + dragOffset.x, touchY + dragOffset.y);
+                }
+            }
+        } else {
+            if (draggingTrash && draggedIndex >= 0 && draggedIndex < trashPositions.size) {
+                Vector2 p = trashPositions.get(draggedIndex);
+                if (p != null && p.x >= binPos.x - binSize/2 && p.x <= binPos.x + binSize/2 &&
+                        p.y >= binPos.y - binSize/2 && p.y <= binPos.y + binSize/2) {
+                    trashPositions.set(draggedIndex, null);
+                    trashCollected++;
+
+                    if (trashCollected >= totalTrash) {
+                        showMinigameMessage("Поздравляю! Весь мусор собран!");
+                        Timer.schedule(new Timer.Task() {
+                            @Override public void run() {
+                                exitTrashMinigame();
+                            }
+                        }, 2);
+                    } else {
+                        showMinigameMessage("Мусор собран! " + trashCollected + "/" + totalTrash);
+                    }
+                }
+            }
+            draggingTrash = false;
+            draggedIndex = -1;
+        }
+    }
+
+    private void drawTrashMinigame() {
+        if (binTexture != null && binPos != null) {
+            batch.draw(binTexture, binPos.x - binSize/2, binPos.y - binSize/2, binSize, binSize);
+        }
+        if (trashTexture != null && trashPositions != null) {
+            for (Vector2 p : trashPositions) {
+                if (p != null) {
+                    batch.draw(trashTexture, p.x - trashSize/2, p.y - trashSize/2, trashSize, trashSize);
+                }
+            }
+        }
+    }
+
+    private void exitTrashMinigame() {
+        trashMinigame = false;
+        minigameStage.clear();
+        Gdx.input.setInputProcessor(uiStage);
+        if (trashCollected >= totalTrash) showMessage("Вернись к Выжившему!", 2f);
+    }
+
+    private void startShardMinigame() {
+        shardMinigame = true;
+        shardsClicked = 0;
+        shardPositions = new Array<>();
+        float w = TheFateGame.VIRTUAL_WIDTH;
+        float h = TheFateGame.VIRTUAL_HEIGHT;
+
+        for (int i = 0; i < totalShards; i++) {
+            float x = 50 + (float) Math.random() * (w - 100);
+            float y = 100 + (float) Math.random() * (h - 200);
+            shardPositions.add(new Vector2(x, y));
+        }
+
+        minigameStage.clear();
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.9f);
+        minigameStage.addActor(darkBg);
+
+        Label title = new Label("СОБЕРИ ОСКОЛКИ", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        title.setPosition(w / 2 - 150, h - 80);
+        minigameStage.addActor(title);
+
+        final Label counter = new Label("Собрано: 0/" + totalShards, new Label.LabelStyle() {{ font = game.font; }});
+        counter.setPosition(20, h - 60);
+        minigameStage.addActor(counter);
+
+        TextButton exitBtn = new TextButton("ВЫЙТИ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        exitBtn.setSize(100, 50);
+        exitBtn.setPosition(w - 120, h - 70);
+        exitBtn.addListener(new ClickListener() {
+            @Override public void clicked(InputEvent e, float x, float y) { exitShardMinigame(); }
+        });
+        minigameStage.addActor(exitBtn);
+
+        minigameStage.getRoot().setUserObject(counter);
+        Gdx.input.setInputProcessor(minigameStage);
+    }
+
+    private void updateShardMinigame(float delta) {
+        if (!shardMinigame) return;
+
+        Object obj = minigameStage.getRoot().getUserObject();
+        if (obj instanceof Label) {
+            ((Label) obj).setText("Собрано: " + shardsClicked + "/" + totalShards);
+        }
+
+        if (Gdx.input.justTouched()) {
+            float screenX = Gdx.input.getX();
+            float screenY = Gdx.input.getY();
+
+            Vector3 stageCoords = minigameStage.getViewport().unproject(new Vector3(screenX, screenY, 0));
+            float touchX = stageCoords.x;
+            float touchY = stageCoords.y;
+
+            for (int i = 0; i < shardPositions.size; i++) {
+                Vector2 p = shardPositions.get(i);
+                if (p != null && touchX >= p.x - shardSize/2 && touchX <= p.x + shardSize/2 &&
+                        touchY >= p.y - shardSize/2 && touchY <= p.y + shardSize/2) {
+                    shardPositions.set(i, null);
+                    shardsClicked++;
+
+                    if (shardsClicked >= totalShards) {
+                        showMinigameMessage("Поздравляю! Все осколки собраны!");
+                        Timer.schedule(new Timer.Task() {
+                            @Override public void run() {
+                                exitShardMinigame();
+                            }
+                        }, 2);
+                    } else {
+                        showMinigameMessage("Осколок собран! " + shardsClicked + "/" + totalShards);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private void drawShardMinigame() {
+        if (shardTexture != null && shardPositions != null) {
+            for (Vector2 p : shardPositions) {
+                if (p != null) {
+                    batch.draw(shardTexture, p.x - shardSize/2, p.y - shardSize/2, shardSize, shardSize);
+                }
+            }
+        }
+    }
+
+    private void exitShardMinigame() {
+        shardMinigame = false;
+        minigameStage.clear();
+        Gdx.input.setInputProcessor(uiStage);
+        if (shardsClicked >= totalShards) showMessage("Вернись к Часовщику!", 2f);
+    }
+
+    private void showMinigameMessage(String msg) {
+        Label label = new Label(msg, new Label.LabelStyle() {{ font = game.smallFont; fontColor = com.badlogic.gdx.graphics.Color.GREEN; }});
+        label.setPosition(TheFateGame.VIRTUAL_WIDTH / 2 - 150, TheFateGame.VIRTUAL_HEIGHT / 2);
+        minigameStage.addActor(label);
+        Timer.schedule(new Timer.Task() { @Override public void run() { label.remove(); } }, 1.5f);
+    }
+
+    private void collectItem(Body body, String id) {
+        if (currentLevel == 2 && id.equals("part")) {
+            partsCollected++;
+            updateItemsLabel();
+            bodiesToDestroy.add(body);
+            itemBodies.put(body, "collected");
+            showMessage("Запчасть " + partsCollected + "/3", 1f);
+            if (partsCollected >= 3) showMessage("Все запчасти собраны! Вернись к Химику.", 2f);
+        }
         showInteractionBtn = false;
         interactionBtn.setVisible(false);
         pendingItemBody = null;
         pendingItemId = null;
     }
 
-    private void showAllItemsCollectedMessage() {
-        messageStage.clear();
-        Table darkBg = new Table();
-        darkBg.setFillParent(true);
-        darkBg.setColor(0, 0, 0, 0.8f);
-        messageStage.addActor(darkBg);
-        Table table = new Table();
-        table.setFillParent(true);
-        messageStage.addActor(table);
-        Label.LabelStyle style = new Label.LabelStyle();
-        style.font = game.titleFont;
-        style.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
-        Label label = new Label("ВСЕ ПРЕДМЕТЫ СОБРАНЫ!\nИдите к выходу", style);
-        label.setFontScale(1.5f);
-        table.add(label).center();
-        Timer.schedule(new Timer.Task() {
-            @Override public void run() {
-                messageStage.clear();
-            }
-        }, 2);
-    }
-
     private void goToNextLevel() {
-        if (currentLevel < 3) {
-            currentLevel++;
-            loadLevel(currentLevel);
-        } else {
-            completeGame();
-        }
+        startFade(() -> {
+            if (currentLevel < 3) { currentLevel++; loadLevel(currentLevel); }
+            else completeGame();
+            isTransitioning = false;
+            fading = false;
+        });
+        isTransitioning = true;
     }
 
     private void completeGame() {
-        isTransitioning = true;
-        messageStage.clear();
-        Table darkBg = new Table();
-        darkBg.setFillParent(true);
-        darkBg.setColor(0, 0, 0, 0.9f);
-        messageStage.addActor(darkBg);
-        Table table = new Table();
-        table.setFillParent(true);
-        messageStage.addActor(table);
-        Label.LabelStyle style = new Label.LabelStyle();
-        style.font = game.titleFont;
-        style.fontColor = com.badlogic.gdx.graphics.Color.GOLD;
-        Label label = new Label("ПРОДОЛЖЕНИЕ СЛЕДУЕТ...", style);
-        label.setFontScale(2f);
-        table.add(label).center();
+        showMessage("ГЛАВА 2 ПРОЙДЕНА!\nПРОДОЛЖЕНИЕ СЛЕДУЕТ...", 3f);
+        game.prefs.putBoolean("chapter2_completed", true);
+        game.prefs.flush();
         game.stopGameMusic();
-        Timer.schedule(new Timer.Task() {
-            @Override public void run() {
-                game.setScreen(new StartMenuScreen(game));
-            }
-        }, 3);
+        Timer.schedule(new Timer.Task() { @Override public void run() { game.setScreen(new StartMenuScreen(game)); } }, 3);
     }
 
     private void dieAndRestart() {
         if (isDead) return;
         isDead = true;
-        Timer.schedule(new Timer.Task() {
-            @Override
-            public void run() {
-                loadLevel(currentLevel);
-                isDead = false;
-            }
-        }, 0.5f);
+        showMessage("ВЫ УМЕРЛИ", 1.5f);
+        Timer.schedule(new Timer.Task() { @Override public void run() { loadLevel(currentLevel); isDead = false; } }, 1.5f);
     }
 
     private void destroyMarkedBodies() {
-        for (Body body : bodiesToDestroy) {
-            if (body != null && body.getWorld() == world) {
-                world.destroyBody(body);
-            }
-        }
+        for (Body b : bodiesToDestroy) if (b != null && b.getWorld() == world) world.destroyBody(b);
         bodiesToDestroy.clear();
     }
 
@@ -678,18 +1090,11 @@ public class Chapter2Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         pauseStage.addActor(table);
-
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.font;
-        labelStyle.fontColor = com.badlogic.gdx.graphics.Color.WHITE;
-        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
-        buttonStyle.font = game.font;
-
         Table dialog = new Table();
         dialog.pad(30);
-        Label title = new Label("ПАУЗА", labelStyle);
+        Label title = new Label("ПАУЗА", new Label.LabelStyle() {{ font = game.font; }});
         title.setFontScale(2f);
-        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", buttonStyle);
+        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", new TextButton.TextButtonStyle() {{ font = game.font; }});
         continueBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 isPaused = false;
@@ -698,7 +1103,7 @@ public class Chapter2Screen implements Screen {
                 if (game.gameMusic != null && game.musicEnabled) game.gameMusic.play();
             }
         });
-        TextButton exitBtn = new TextButton("В МЕНЮ", buttonStyle);
+        TextButton exitBtn = new TextButton("В МЕНЮ", new TextButton.TextButtonStyle() {{ font = game.font; }});
         exitBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 game.stopGameMusic();
@@ -707,21 +1112,18 @@ public class Chapter2Screen implements Screen {
             }
         });
         dialog.add(title).padBottom(40).row();
-        dialog.add(continueBtn).width(game.getScaledSize(200)).height(game.getScaledSize(50)).padBottom(20).row();
-        dialog.add(exitBtn).width(game.getScaledSize(200)).height(game.getScaledSize(50)).row();
+        dialog.add(continueBtn).width(200).height(50).padBottom(20).row();
+        dialog.add(exitBtn).width(200).height(50).row();
         table.add(dialog).center();
     }
 
     private void update(float delta) {
-        if (isPaused || isTransitioning || isDead) return;
+        if (isPaused || isTransitioning || isDead || showingDialog) return;
+        if (trashMinigame) { updateTrashMinigame(delta); return; }
+        if (shardMinigame) { updateShardMinigame(delta); return; }
 
-        Vector2 vel = playerBody.getLinearVelocity();
-        float velX = 0;
-        if (movingRight) velX = speed;
-        if (movingLeft) velX = -speed;
-        vel.x = velX;
-        playerBody.setLinearVelocity(vel);
-
+        float velX = (movingRight ? speed : 0) + (movingLeft ? -speed : 0);
+        playerBody.setLinearVelocity(velX, playerBody.getLinearVelocity().y);
         if (movingLeft || movingRight) stateTime += delta;
         else stateTime = 0;
         if (movingRight) facingRight = true;
@@ -730,8 +1132,8 @@ public class Chapter2Screen implements Screen {
         world.step(delta, 6, 2);
         destroyMarkedBodies();
 
-        Vector2 pos = playerBody.getPosition();
-        camera.position.set(pos.x * PPM, pos.y * PPM, 0);
+        if (playerBody.getPosition().y < -2) dieAndRestart();
+        camera.position.set(playerBody.getPosition().x * PPM, playerBody.getPosition().y * PPM, 0);
         camera.update();
     }
 
@@ -741,73 +1143,89 @@ public class Chapter2Screen implements Screen {
         else if (movingRight) region = walkRightAnimation.getKeyFrame(stateTime, true);
         else region = facingRight ? standRight : standLeft;
         Vector2 pos = playerBody.getPosition();
-        float size = 64f;
-        batch.draw(region, pos.x * PPM - size/2, pos.y * PPM - size/2, size, size);
+        batch.draw(region, pos.x * PPM - playerSize/2, pos.y * PPM - playerSize/2, playerSize, playerSize);
     }
 
-    @Override public void render(float delta) {
+    @Override
+    public void render(float delta) {
         update(delta);
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        if (tiledMapRenderer != null) {
-            tiledMapRenderer.setView(camera);
-            tiledMapRenderer.render();
+        if (trashMinigame) {
+            batch.setProjectionMatrix(minigameStage.getCamera().combined);
+            batch.begin();
+            drawTrashMinigame();
+            batch.end();
+            minigameStage.act(delta);
+            minigameStage.draw();
+        } else if (shardMinigame) {
+            batch.setProjectionMatrix(minigameStage.getCamera().combined);
+            batch.begin();
+            drawShardMinigame();
+            batch.end();
+            minigameStage.act(delta);
+            minigameStage.draw();
+        } else {
+            if (tiledMapRenderer != null) {
+                tiledMapRenderer.setView(camera);
+                tiledMapRenderer.render();
+            }
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            drawPlayer();
+            batch.end();
+            uiStage.act(delta);
+            uiStage.draw();
         }
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        drawPlayer();
-        batch.end();
-
-        uiStage.act(delta);
-        uiStage.draw();
         if (isPaused) pauseStage.draw();
         messageStage.act(delta);
         messageStage.draw();
+        if (showingDialog) { dialogStage.act(delta); dialogStage.draw(); }
+        questStage.act(delta);
+        questStage.draw();
+
+        if (fading) {
+            updateFade(delta);
+            batch.begin();
+            batch.setColor(0, 0, 0, fadeAlpha);
+            batch.draw(fadeTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
+            batch.setColor(1, 1, 1, 1);
+            batch.end();
+        }
     }
 
-    @Override public void resize(int width, int height) {
-        game.viewport.update(width, height, true);
-
-        float worldWidth = game.viewport.getWorldWidth() / ZOOM;
-        float worldHeight = game.viewport.getWorldHeight() / ZOOM;
-        camera.viewportWidth = worldWidth;
-        camera.viewportHeight = worldHeight;
+    @Override public void resize(int w, int h) {
+        game.viewport.update(w, h, true);
+        float worldW = game.viewport.getWorldWidth() / ZOOM;
+        float worldH = game.viewport.getWorldHeight() / ZOOM;
+        camera.viewportWidth = worldW;
+        camera.viewportHeight = worldH;
         camera.update();
-
-        uiStage.getViewport().update(width, height, true);
-        pauseStage.getViewport().update(width, height, true);
-        messageStage.getViewport().update(width, height, true);
-        if (imageStage != null) imageStage.getViewport().update(width, height, true);
-
-        // Обновляем адаптивные размеры
+        uiStage.getViewport().update(w, h, true);
+        pauseStage.getViewport().update(w, h, true);
+        messageStage.getViewport().update(w, h, true);
+        dialogStage.getViewport().update(w, h, true);
+        questStage.getViewport().update(w, h, true);
+        minigameStage.getViewport().update(w, h, true);
         uiScale = game.getUIScale();
         btnSize = game.getScaledSize(100);
         pauseSize = game.getScaledSize(70);
-
-        // Пересоздаем UI
         uiStage.clear();
         createUI();
     }
 
-    @Override public void show() {
-        Gdx.input.setInputProcessor(uiStage);
-        game.startGameMusic();
-    }
-
+    @Override public void show() { Gdx.input.setInputProcessor(uiStage); game.startGameMusic(); }
     @Override public void hide() { game.stopGameMusic(); }
-
     @Override public void dispose() {
-        uiStage.dispose();
-        pauseStage.dispose();
-        messageStage.dispose();
-        if (imageStage != null) imageStage.dispose();
+        uiStage.dispose(); pauseStage.dispose(); messageStage.dispose();
+        dialogStage.dispose(); questStage.dispose(); minigameStage.dispose();
+        if (fadeTexture != null) fadeTexture.dispose();
         if (world != null) world.dispose();
         if (tiledMap != null) tiledMap.dispose();
         if (tiledMapRenderer != null) tiledMapRenderer.dispose();
     }
-
     @Override public void pause() {}
     @Override public void resume() {}
 }

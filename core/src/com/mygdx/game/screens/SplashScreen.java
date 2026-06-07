@@ -21,39 +21,38 @@ public class SplashScreen implements Screen {
         try {
             logo = new Texture("splash.png");
         } catch (Exception e) {
-
+            // Если нет splash.png, создаем заглушку
+            com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(400, 400, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+            pixmap.setColor(0.2f, 0.2f, 0.3f, 1);
+            pixmap.fill();
+            logo = new Texture(pixmap);
+            pixmap.dispose();
         }
-
 
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
-
-                if (game.isFirstLaunch()) {
-                    game.setScreen(new LanguageChoiceScreen(game));
-                } else {
-
+                if (game.languageManager.isLanguageChosen()) {
                     game.setScreen(new StartMenuScreen(game));
+                } else {
+                    game.setScreen(new LanguageChoiceScreen(game));
                 }
             }
-        }, 4);
+        }, 2);
     }
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         elapsedTime += delta;
-
-        float alpha;
-        if (elapsedTime < 1f) {
-            alpha = elapsedTime / 1f;
-        } else if (elapsedTime > 3f) {
-            alpha = 1f - ((elapsedTime - 3f) / 1f);
+        float alpha = 1f;
+        if (elapsedTime < 0.5f) {
+            alpha = elapsedTime / 0.5f;
+        } else if (elapsedTime > 1.5f) {
+            alpha = 1f - ((elapsedTime - 1.5f) / 0.5f);
             if (alpha < 0) alpha = 0;
-        } else {
-            alpha = 1f;
         }
 
         if (logo != null) {
@@ -64,7 +63,6 @@ public class SplashScreen implements Screen {
             float logoHeight = 400 * logo.getHeight() / logo.getWidth();
             float x = (width - logoWidth) / 2;
             float y = (height - logoHeight) / 2;
-
             batch.setColor(1, 1, 1, alpha);
             batch.draw(logo, x, y, logoWidth, logoHeight);
             batch.setColor(1, 1, 1, 1);
@@ -72,19 +70,11 @@ public class SplashScreen implements Screen {
         }
     }
 
-    @Override
-    public void resize(int width, int height) {
-        game.resize(width, height);
-    }
-
-    @Override
-    public void dispose() {
+    @Override public void resize(int width, int height) { game.resize(width, height); }
+    @Override public void dispose() {
         batch.dispose();
-        if (logo != null) {
-            logo.dispose();
-        }
+        if (logo != null) logo.dispose();
     }
-
     @Override public void show() {}
     @Override public void hide() {}
     @Override public void pause() {}

@@ -37,7 +37,6 @@ public class LanguageManager {
         ru.put("new_game", "НОВАЯ ИГРА");
         ru.put("social", "СОЦСЕТИ");
         ru.put("exit", "ВЫХОД");
-        ru.put("music_volume", "ГРОМКОСТЬ МУЗЫКИ");
         ru.put("music", "МУЗЫКА");
         ru.put("on", "ВКЛ");
         ru.put("off", "ВЫКЛ");
@@ -46,34 +45,27 @@ public class LanguageManager {
         ru.put("language", "ЯЗЫК");
         ru.put("russian", "РУССКИЙ");
         ru.put("english", "АНГЛИЙСКИЙ");
-        ru.put("choose_action", "ВЫБЕРИТЕ ДЕЙСТВИЕ");
-        ru.put("cancel", "ОТМЕНА");
         ru.put("volume", "ГРОМКОСТЬ");
-        ru.put("select_language", "ВЫБЕРИТЕ ЯЗЫК");
-        ru.put("welcome", "ДОБРО ПОЖАЛОВАТЬ!");
-        ru.put("required_items", "Деталей: %d/%d");
-        ru.put("game_over", "ВЫ УМЕРЛИ");
-        ru.put("level_complete", "УРОВЕНЬ ПРОЙДЕН");
-        ru.put("items_collected", "Собрано предметов: %d/5");
-        ru.put("chapter2_unlocked", "ГЛАВА 2 РАЗБЛОКИРОВАНА!");
-        ru.put("go_to_exit", "Идите к выходу из главы");
-        ru.put("tap_to_continue", "Нажмите для продолжения");
-        ru.put("returning_to_menu", "Возврат в меню...");
         ru.put("game_paused", "ПАУЗА");
         ru.put("restart_level", "ПЕРЕЗАПУСТИТЬ УРОВЕНЬ");
         ru.put("exit_to_menu", "ВЫЙТИ В МЕНЮ");
         ru.put("you_died", "ВЫ УМЕРЛИ");
-        ru.put("restarting_level", "Перезапуск уровня...");
-        ru.put("level_complete", "УРОВЕНЬ %d ПРОЙДЕН!");
-        ru.put("loading_next_level", "Загрузка следующего уровня...");
-        ru.put("chapter_complete", "ГЛАВА %d ПРОЙДЕНА!");
-        ru.put("game_complete", "ИГРА ПРОЙДЕНА!");
-        ru.put("all_items_collected", "ВСЕ ПРЕДМЕТЫ СОБРАНЫ!");
-        ru.put("select_chapter", "ВЫБЕРИТЕ ГЛАВУ");
-        ru.put("chapter_1", "ГЛАВА 1");
-        ru.put("chapter_2", "ГЛАВА 2");
-        ru.put("chapter_2_locked", "ГЛАВА 2 (ЗАБЛОКИРОВАНА)");
-        ru.put("complete_chapter1_to_unlock", "Пройдите Главу 1, чтобы открыть Главу 2");
+        ru.put("tap_to_continue", "Нажмите для продолжения");
+        ru.put("select_language", "ВЫБЕРИТЕ ЯЗЫК");
+        ru.put("items_collected", "Предметов собрано: %d из 5");
+        ru.put("all_items_collected", "ВСЕ ПРЕДМЕТЫ СОБРАНЫ! Теперь можно идти к выходу.");
+        ru.put("chapter1_complete_title", "ГЛАВА 1 ПРОЙДЕНА!");
+        ru.put("chapter2_unlocked", "ГЛАВА 2 ОТКРЫТА!");
+        ru.put("loading", "ЗАГРУЗКА...");
+        ru.put("chapter2_loading", "Переход во 2 главу...");
+        ru.put("note_collected", "Найдена записка!");
+        ru.put("no_notes", "У вас пока нет записок!");
+        ru.put("book_title", "СОБРАННЫЕ ЗАПИСКИ");
+        ru.put("previous", "НАЗАД");
+        ru.put("next", "ДАЛЕЕ");
+        ru.put("close", "ЗАКРЫТЬ");
+        ru.put("open_note", "ОТКРЫТЬ ЗАПИСКУ");
+        ru.put("note_prefix", "Записка");
         translations.put(RUSSIAN, ru);
 
         Map<String, String> en = new HashMap<>();
@@ -81,28 +73,9 @@ public class LanguageManager {
         en.put("start", "START");
         en.put("continue", "CONTINUE");
         en.put("new_game", "NEW GAME");
-        en.put("items_collected", "Items collected: %d/5");
-        en.put("chapter2_unlocked", "CHAPTER 2 UNLOCKED!");
-        en.put("go_to_exit", "Go to the chapter exit");
         en.put("social", "SOCIAL");
         en.put("exit", "EXIT");
-        en.put("music_volume", "MUSIC VOLUME");
         en.put("music", "MUSIC");
-        en.put("game_paused", "GAME PAUSED");
-        en.put("restart_level", "RESTART LEVEL");
-        en.put("exit_to_menu", "EXIT TO MENU");
-        en.put("you_died", "YOU DIED");
-        en.put("restarting_level", "Restarting level...");
-        en.put("level_complete", "LEVEL %d COMPLETE!");
-        en.put("loading_next_level", "Loading next level...");
-        en.put("chapter_complete", "CHAPTER %d COMPLETE!");
-        en.put("game_complete", "GAME COMPLETE!");
-        en.put("all_items_collected", "ALL ITEMS COLLECTED!");
-        en.put("select_chapter", "SELECT CHAPTER");
-        en.put("chapter_1", "CHAPTER 1");
-        en.put("chapter_2", "CHAPTER 2");
-        en.put("chapter_2_locked", "CHAPTER 2 (LOCKED)");
-        en.put("complete_chapter1_to_unlock", "Complete Chapter 1 to unlock Chapter 2");
         en.put("on", "ON");
         en.put("off", "OFF");
         en.put("reset_settings", "RESET SETTINGS");
@@ -110,16 +83,27 @@ public class LanguageManager {
         en.put("language", "LANGUAGE");
         en.put("russian", "RUSSIAN");
         en.put("english", "ENGLISH");
-        en.put("choose_action", "CHOOSE ACTION");
-        en.put("cancel", "CANCEL");
         en.put("volume", "VOLUME");
-        en.put("select_language", "SELECT LANGUAGE");
-        en.put("welcome", "WELCOME!");
-        en.put("required_items", "Parts: %d/%d");
-        en.put("game_over", "GAME OVER");
-        en.put("level_complete", "LEVEL COMPLETE");
+        en.put("game_paused", "GAME PAUSED");
+        en.put("restart_level", "RESTART LEVEL");
+        en.put("exit_to_menu", "EXIT TO MENU");
+        en.put("you_died", "YOU DIED");
         en.put("tap_to_continue", "Tap to continue");
-        en.put("returning_to_menu", "Returning to menu...");
+        en.put("select_language", "SELECT LANGUAGE");
+        en.put("items_collected", "Items collected: %d out of 5");
+        en.put("all_items_collected", "ALL ITEMS COLLECTED! You can now go to the exit.");
+        en.put("chapter1_complete_title", "CHAPTER 1 COMPLETE!");
+        en.put("chapter2_unlocked", "CHAPTER 2 UNLOCKED!");
+        en.put("loading", "LOADING...");
+        en.put("chapter2_loading", "Loading Chapter 2...");
+        en.put("note_collected", "Note found!");
+        en.put("no_notes", "You have no notes yet!");
+        en.put("book_title", "COLLECTED NOTES");
+        en.put("previous", "BACK");
+        en.put("next", "NEXT");
+        en.put("close", "CLOSE");
+        en.put("open_note", "OPEN NOTE");
+        en.put("note_prefix", "Note");
         translations.put(ENGLISH, en);
     }
 
@@ -139,24 +123,15 @@ public class LanguageManager {
         if (language.equals(RUSSIAN) || language.equals(ENGLISH)) {
             this.currentLanguage = language;
             prefs.putString("language", language);
-            prefs.putBoolean("firstLaunch", false);
+            prefs.putBoolean("language_chosen", true);
             prefs.flush();
         }
     }
 
-    public boolean isFirstLaunch() {
-        return prefs.getBoolean("firstLaunch", true);
+    public boolean isLanguageChosen() {
+        return prefs.getBoolean("language_chosen", false);
     }
-
     public String getCurrentLanguage() {
         return currentLanguage;
-    }
-
-    public boolean isRussian() {
-        return currentLanguage.equals(RUSSIAN);
-    }
-
-    public boolean isEnglish() {
-        return currentLanguage.equals(ENGLISH);
     }
 }

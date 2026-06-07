@@ -15,7 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
 import com.mygdx.game.Chapter1Screen;
-import com.mygdx.game.Chapter2Screen;
+import com.mygdx.game.screens.Chapter2Screen;
 
 public class StartMenuScreen implements Screen {
     private final TheFateGame game;
