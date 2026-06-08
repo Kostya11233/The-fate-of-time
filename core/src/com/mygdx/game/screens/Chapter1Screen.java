@@ -444,7 +444,7 @@ public class Chapter1Screen implements Screen {
 
         bookBtn = new ImageButton(new TextureRegionDrawable(bookTex));
         bookBtn.setSize(pauseSize, pauseSize);
-        bookBtn.setPosition(20 * uiScale, screenH - pauseSize - 20 * uiScale);
+        bookBtn.setPosition(15 * uiScale, screenH - pauseSize - 20 * uiScale);
         bookBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {

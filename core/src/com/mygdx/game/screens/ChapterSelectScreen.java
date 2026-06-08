@@ -12,17 +12,18 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
 import com.mygdx.game.Chapter1Screen;
-import com.mygdx.game.screens.Chapter2Screen;
 
 public class ChapterSelectScreen implements Screen {
     private final TheFateGame game;
     private Stage stage;
     private boolean chapter2Unlocked;
+    private boolean chapter3Unlocked;
 
     public ChapterSelectScreen(TheFateGame game) {
         this.game = game;
         this.stage = new Stage(new ExtendViewport(1280, 720));
         this.chapter2Unlocked = game.prefs.getBoolean("chapter2_unlocked", false);
+        this.chapter3Unlocked = game.prefs.getBoolean("chapter3_unlocked", false);
         createUI();
     }
 
@@ -64,6 +65,21 @@ public class ChapterSelectScreen implements Screen {
             }
         });
 
+        String chapter3Text = chapter3Unlocked ? "ТРЕТЬЯ ГЛАВА" : "ТРЕТЬЯ ГЛАВА (ЗАКРЫТА)";
+        TextButton chapter3Btn = new TextButton(chapter3Text, buttonStyle);
+        if (!chapter3Unlocked) {
+            chapter3Btn.setDisabled(true);
+        }
+        chapter3Btn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent e, float x, float y) {
+                if (chapter3Unlocked) {
+                    game.clearSave();
+                    game.setScreen(new Chapter3Screen(game));
+                }
+            }
+        });
+
         TextButton backBtn = new TextButton("НАЗАД", buttonStyle);
         backBtn.addListener(new ClickListener() {
             @Override
@@ -72,22 +88,11 @@ public class ChapterSelectScreen implements Screen {
             }
         });
 
-        if (!chapter2Unlocked) {
-            Label infoLabel = new Label("Пройдите первую главу, чтобы открыть вторую", new Label.LabelStyle() {{ font = game.font; }});
-            infoLabel.setColor(0.7f, 0.7f, 0.2f, 1);
-
-            table.add(titleLabel).padBottom(50).row();
-            table.add(chapter1Btn).width(350).height(80).padBottom(30).row();
-            table.add(chapter2Btn).width(350).height(80).padBottom(20).row();
-            table.add(infoLabel).padBottom(30).row();
-            table.add(backBtn).width(250).height(60).row();
-        } else {
-            table.add(titleLabel).padBottom(50).row();
-            table.add(chapter1Btn).width(350).height(80).padBottom(30).row();
-            table.add(chapter2Btn).width(350).height(80).padBottom(50).row();
-            table.add(backBtn).width(250).height(60).row();
-        }
-
+        table.add(titleLabel).padBottom(50).row();
+        table.add(chapter1Btn).width(350).height(80).padBottom(20).row();
+        table.add(chapter2Btn).width(350).height(80).padBottom(20).row();
+        table.add(chapter3Btn).width(350).height(80).padBottom(30).row();
+        table.add(backBtn).width(250).height(60).row();
         table.center();
     }
 
@@ -108,6 +113,7 @@ public class ChapterSelectScreen implements Screen {
     public void show() {
         Gdx.input.setInputProcessor(stage);
         chapter2Unlocked = game.prefs.getBoolean("chapter2_unlocked", false);
+        chapter3Unlocked = game.prefs.getBoolean("chapter3_unlocked", false);
         stage.clear();
         createUI();
     }

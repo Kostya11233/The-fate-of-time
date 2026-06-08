@@ -23,7 +23,6 @@ public class TheFateGame extends Game {
     public Music menuMusic;
     public Music gameMusic;
 
-    // Виртуальное разрешение (на него ориентируемся при верстке)
     public static final int VIRTUAL_WIDTH = 1280;
     public static final int VIRTUAL_HEIGHT = 720;
 
@@ -32,7 +31,6 @@ public class TheFateGame extends Game {
     public boolean musicEnabled = true;
     public LanguageManager languageManager;
 
-    // Коэффициенты масштабирования для разных устройств
     public float scaleX = 1f;
     public float scaleY = 1f;
     public float uiScale = 1f;
@@ -45,7 +43,6 @@ public class TheFateGame extends Game {
         batch = new SpriteBatch();
         camera = new OrthographicCamera();
 
-        // Используем FitViewport - сохраняет пропорции, добавляет черные полосы при необходимости
         viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
         viewport.apply();
         camera.position.set(VIRTUAL_WIDTH / 2f, VIRTUAL_HEIGHT / 2f, 0);
@@ -78,10 +75,7 @@ public class TheFateGame extends Game {
 
         scaleX = screenWidth / VIRTUAL_WIDTH;
         scaleY = screenHeight / VIRTUAL_HEIGHT;
-        uiScale = Math.min(scaleX, scaleY); // Берем меньший коэффициент для UI
-
-        Gdx.app.log("Screen", "Real size: " + screenWidth + "x" + screenHeight);
-        Gdx.app.log("Screen", "Scale: " + scaleX + "x" + scaleY + ", UI Scale: " + uiScale);
+        uiScale = Math.min(scaleX, scaleY);
     }
 
     public float getUIScale() {
@@ -94,7 +88,6 @@ public class TheFateGame extends Game {
 
     private void loadFonts() {
         try {
-            // Пробуем загрузить шрифт из нескольких возможных путей
             String[] fontPaths = {"font.ttf", "fonts/font.ttf", "Font.ttf", "fonts/Font.ttf"};
             FreeTypeFontGenerator generator = null;
 
@@ -108,26 +101,22 @@ public class TheFateGame extends Game {
             }
 
             if (generator == null) {
-                // Если шрифт не найден, используем стандартный
                 font = new BitmapFont();
                 titleFont = new BitmapFont();
                 smallFont = new BitmapFont();
                 return;
             }
 
-            // Основной шрифт
             FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
             param.size = Math.max(24, Math.round(30 * uiScale));
             param.characters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{};:'\",.<>/?\\|`~";
             font = generator.generateFont(param);
 
-            // Заголовочный шрифт
             FreeTypeFontGenerator.FreeTypeFontParameter titleParam = new FreeTypeFontGenerator.FreeTypeFontParameter();
             titleParam.size = Math.max(36, Math.round(52 * uiScale));
             titleParam.characters = param.characters;
             titleFont = generator.generateFont(titleParam);
 
-            // Маленький шрифт
             FreeTypeFontGenerator.FreeTypeFontParameter smallParam = new FreeTypeFontGenerator.FreeTypeFontParameter();
             smallParam.size = Math.max(16, Math.round(20 * uiScale));
             smallParam.characters = param.characters;
@@ -136,8 +125,6 @@ public class TheFateGame extends Game {
             generator.dispose();
 
         } catch (Exception e) {
-            e.printStackTrace();
-            // Fallback шрифты
             font = new BitmapFont();
             titleFont = new BitmapFont();
             smallFont = new BitmapFont();
@@ -205,15 +192,16 @@ public class TheFateGame extends Game {
         prefs.putInteger("saved_items", 0);
         prefs.flush();
     }
+
     public void clearAllProgress() {
         prefs.clear();
         prefs.flush();
         volume = 0.7f;
         musicEnabled = true;
         saveSettings();
-        // Сбрасываем флаг выбора языка, чтобы при первом запуске показать выбор
         languageManager.setLanguage("ru");
     }
+
     public void saveSettings() {
         prefs.putFloat("volume", volume);
         prefs.putBoolean("musicEnabled", musicEnabled);
@@ -225,8 +213,6 @@ public class TheFateGame extends Game {
         viewport.update(width, height, true);
         camera.position.set(VIRTUAL_WIDTH / 2f, VIRTUAL_HEIGHT / 2f, 0);
         calculateScaling();
-
-        // Перезагружаем шрифты с новым масштабом
         loadFonts();
     }
 

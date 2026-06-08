@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapLayer;
+import com.mygdx.game.screens.Chapter3Screen;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -223,7 +224,7 @@ public class Chapter2Screen implements Screen {
         float screenH = TheFateGame.VIRTUAL_HEIGHT;
         float btnMargin = 25 * uiScale;
         float btnBottomY = 35 * uiScale;
-        // Кнопки левее - смещаем центр влево
+
         float btnAreaCenter = screenW / 4.5f;
 
         leftBtn = createMoveButton(leftTex, btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2, () -> movingLeft = true, () -> movingLeft = false);
@@ -1062,11 +1063,18 @@ public class Chapter2Screen implements Screen {
     }
 
     private void completeGame() {
-        showMessage("ГЛАВА 2 ПРОЙДЕНА!\nПРОДОЛЖЕНИЕ СЛЕДУЕТ...", 3f);
+        showMessage("ГЛАВА 2 ПРОЙДЕНА!\nЗАГРУЗКА ГЛАВЫ 3...", 3f);
         game.prefs.putBoolean("chapter2_completed", true);
+        game.prefs.putBoolean("chapter3_unlocked", true);
         game.prefs.flush();
         game.stopGameMusic();
-        Timer.schedule(new Timer.Task() { @Override public void run() { game.setScreen(new StartMenuScreen(game)); } }, 3);
+
+        Timer.schedule(new Timer.Task() {
+            @Override
+            public void run() {
+                game.setScreen(new Chapter3Screen(game));
+            }
+        }, 3);
     }
 
     private void dieAndRestart() {
