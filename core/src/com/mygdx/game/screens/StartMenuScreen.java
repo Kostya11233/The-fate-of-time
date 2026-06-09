@@ -3,19 +3,17 @@ package com.mygdx.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
-import com.mygdx.game.Chapter1Screen;
-import com.mygdx.game.screens.Chapter2Screen;
 
 public class StartMenuScreen implements Screen {
     private final TheFateGame game;
@@ -30,7 +28,6 @@ public class StartMenuScreen implements Screen {
     private TextButton.TextButtonStyle buttonStyle;
     private GlyphLayout glyphLayout;
 
-    // Адаптивные размеры
     private float uiScale;
     private float btnWidth;
     private float btnHeight;
@@ -86,7 +83,6 @@ public class StartMenuScreen implements Screen {
         float startY = h / 2 + 80 * uiScale;
         float stepY = 90f * uiScale;
 
-        // Кнопка ПРОДОЛЖИТЬ
         if (game.hasSaveGame()) {
             continueBtn = new TextButton(game.languageManager.getText("continue"), buttonStyle);
             continueBtn.setSize(btnWidth, btnHeight);
@@ -109,7 +105,6 @@ public class StartMenuScreen implements Screen {
             stage.addActor(continueBtn);
         }
 
-        // Кнопка НОВАЯ ИГРА
         float newGameY = game.hasSaveGame() ? startY - stepY : startY;
         newGameBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
         newGameBtn.setSize(btnWidth, btnHeight);
@@ -122,7 +117,6 @@ public class StartMenuScreen implements Screen {
         });
         stage.addActor(newGameBtn);
 
-        // Кнопка НАСТРОЙКИ
         settingsBtn = new TextButton(game.languageManager.getText("settings"), buttonStyle);
         settingsBtn.setSize(btnWidth, btnHeight);
         settingsBtn.setPosition(centerX, newGameY - stepY);
@@ -134,7 +128,6 @@ public class StartMenuScreen implements Screen {
         });
         stage.addActor(settingsBtn);
 
-        // Кнопка СОЦСЕТИ
         socialBtn = new TextButton(game.languageManager.getText("social"), buttonStyle);
         socialBtn.setSize(btnWidth, btnHeight);
         socialBtn.setPosition(centerX, newGameY - stepY * 2);
@@ -146,7 +139,6 @@ public class StartMenuScreen implements Screen {
         });
         stage.addActor(socialBtn);
 
-        // Кнопка ВЫХОД
         exitBtn = new TextButton(game.languageManager.getText("exit"), buttonStyle);
         exitBtn.setSize(btnWidth, btnHeight);
         exitBtn.setPosition(centerX, newGameY - stepY * 3);
@@ -158,9 +150,9 @@ public class StartMenuScreen implements Screen {
         });
         stage.addActor(exitBtn);
 
-        // Версия игры
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.smallFont;
+        labelStyle.fontColor = Color.GRAY;
         Label versionLabel = new Label("v1.0.0", labelStyle);
         versionLabel.setPosition(w - 80 * uiScale, 20 * uiScale);
         stage.addActor(versionLabel);
@@ -209,13 +201,10 @@ public class StartMenuScreen implements Screen {
         float titleX = (w - titleWidth) / 2;
         float titleY = h - 80 * uiScale;
 
-        // Тень
         game.titleFont.setColor(0, 0, 0, 0.5f);
         game.titleFont.draw(game.batch, title, titleX + 3 * uiScale, titleY - 3 * uiScale);
-        // Основной текст
         game.titleFont.setColor(1, 0.85f, 0.3f, 1);
         game.titleFont.draw(game.batch, title, titleX, titleY);
-        // Сброс цвета
         game.titleFont.setColor(1, 1, 1, 1);
         game.titleFont.getData().setScale(1f);
     }
@@ -225,12 +214,10 @@ public class StartMenuScreen implements Screen {
         game.viewport.update(width, height, true);
         stage.getViewport().update(width, height, true);
 
-        // Обновляем адаптивные размеры
         uiScale = game.getUIScale();
         btnWidth = 320f * uiScale;
         btnHeight = 70f * uiScale;
 
-        // Пересоздаем UI
         stage.clear();
         createUI();
         refreshButtonTexts();

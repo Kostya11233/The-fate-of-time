@@ -26,7 +26,6 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
-import com.mygdx.game.screens.StartMenuScreen;
 
 public class Chapter3Screen implements Screen {
     private final TheFateGame game;
@@ -77,14 +76,7 @@ public class Chapter3Screen implements Screen {
     private float timeObjectPulseScale = 1f;
     private float timeObjectPulseDir = 0.02f;
 
-    private String[] alexDialog = {
-            "Элис... Ты слышишь меня?",
-            "Это твой отец. Я записал это сообщение на случай, если время остановится.",
-            "Ты всегда была сильной. Я знал, что ты доберешься до временного объекта.",
-            "Гиперкуб - это не просто машина времени. Это ключ к перезагрузке реальности.",
-            "Но есть цена. Если ты используешь его... ты останешься в прошлом навсегда.",
-            "Выбор за тобой, дочка. Я горжусь тобой, что бы ты ни решила."
-    };
+    private String[] alexDialog;
     private int dialogIndex = 0;
     private boolean dialogActive = false;
 
@@ -119,12 +111,7 @@ public class Chapter3Screen implements Screen {
             this.velY = velY;
             this.rotation = MathUtils.random(0, 360);
             this.rotationSpeed = MathUtils.random(-180, 180);
-            this.color = new Color(
-                    0.6f + MathUtils.random(0.3f),
-                    0.5f + MathUtils.random(0.3f),
-                    0.4f + MathUtils.random(0.2f),
-                    1f
-            );
+            this.color = new Color(0.6f + MathUtils.random(0.3f), 0.5f + MathUtils.random(0.3f), 0.4f + MathUtils.random(0.2f), 1f);
         }
 
         void update(float delta) {
@@ -163,13 +150,22 @@ public class Chapter3Screen implements Screen {
         this.messageStage = new Stage(new ExtendViewport(screenW, screenH));
         this.endGameStage = new Stage(new ExtendViewport(screenW, screenH));
 
+        // Load localized dialogs
+        alexDialog = new String[]{
+                game.languageManager.getText("alex_dialog_1"),
+                game.languageManager.getText("alex_dialog_2"),
+                game.languageManager.getText("alex_dialog_3"),
+                game.languageManager.getText("alex_dialog_4"),
+                game.languageManager.getText("alex_dialog_5"),
+                game.languageManager.getText("alex_dialog_6")
+        };
+
         loadTextures();
         createStars();
         initGame();
         createUI();
 
         Gdx.input.setInputProcessor(uiStage);
-
         game.stopMenuMusic();
         game.stopGameMusic();
     }
@@ -306,11 +302,11 @@ public class Chapter3Screen implements Screen {
         smallStyle.font = game.smallFont;
         smallStyle.fontColor = Color.CYAN;
 
-        Label progressPercentLabel = new Label("УКЛОНЕНИЙ", smallStyle);
+        Label progressPercentLabel = new Label(game.languageManager.getText("chapter3_evades"), smallStyle);
         progressPercentLabel.setPosition(screenW / 2 - 70, screenH - 120);
         uiStage.addActor(progressPercentLabel);
 
-        Label hintLabel = new Label("← ПЕРЕМЕЩАЙ РАКЕТУ ПАЛЬЦЕМ →", smallStyle);
+        Label hintLabel = new Label(game.languageManager.getText("chapter3_hint"), smallStyle);
         hintLabel.setPosition(screenW / 2 - 180, 30);
         hintLabel.setFontScale(0.9f);
         uiStage.addActor(hintLabel);
@@ -341,13 +337,13 @@ public class Chapter3Screen implements Screen {
         if (dialogBgRegion != null) panel.setBackground(new TextureRegionDrawable(dialogBgRegion));
         panel.pad(40);
 
-        Label title = new Label("ПАУЗА", new Label.LabelStyle() {{
+        Label title = new Label(game.languageManager.getText("game_paused"), new Label.LabelStyle() {{
             font = game.titleFont;
             fontColor = Color.GOLD;
         }});
         title.setFontScale(1.5f);
 
-        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton continueBtn = new TextButton(game.languageManager.getText("resume"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         continueBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -357,7 +353,7 @@ public class Chapter3Screen implements Screen {
             }
         });
 
-        TextButton exitBtn = new TextButton("В МЕНЮ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_to_menu"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         exitBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -412,7 +408,6 @@ public class Chapter3Screen implements Screen {
         float speedX = MathUtils.random(-120f, 120f);
 
         meteoroids.add(new Meteoroid(x, y, size, speedX, speedY));
-
         meteoroidSpeedMultiplier = Math.min(1.8f, meteoroidSpeedMultiplier + 0.003f);
     }
 
@@ -429,7 +424,7 @@ public class Chapter3Screen implements Screen {
                 hitFlashAlpha = 0.8f;
                 meteoroidsPassed = Math.max(0, meteoroidsPassed - 1);
                 updateProgressDisplay();
-                showMessage("-1 УКЛОНЕНИЕ", 0.8f, Color.RED);
+                showMessage(game.languageManager.getText("hit_message"), 0.8f, Color.RED);
                 continue;
             }
 
@@ -441,7 +436,7 @@ public class Chapter3Screen implements Screen {
 
                 if (meteoroidsPassed >= requiredMeteoroidsToPass && !timeObjectReached && !dialogActive) {
                     timeObjectReached = true;
-                    showMessage("ВРЕМЕННОЙ ОБЪЕКТ ДОСТИГНУТ!", 1.5f, Color.GOLD);
+                    showMessage(game.languageManager.getText("time_object_reached"), 1.5f, Color.GOLD);
                     Timer.schedule(new Timer.Task() {
                         @Override
                         public void run() {
@@ -500,7 +495,7 @@ public class Chapter3Screen implements Screen {
         }
         dialogBox.pad(30);
 
-        Label nameLabel = new Label("✧ АЛЕКС (ОТЕЦ) ✧", new Label.LabelStyle() {{
+        Label nameLabel = new Label(game.languageManager.getText("alex"), new Label.LabelStyle() {{
             font = game.font;
             fontColor = Color.GOLD;
         }});
@@ -512,7 +507,7 @@ public class Chapter3Screen implements Screen {
         }});
         textLabel.setWrap(true);
 
-        TextButton nextBtn = new TextButton("ДАЛЕЕ →", new TextButton.TextButtonStyle() {{
+        TextButton nextBtn = new TextButton(game.languageManager.getText("next_level"), new TextButton.TextButtonStyle() {{
             font = game.font;
         }});
         nextBtn.getLabel().setFontScale(0.9f);
@@ -575,13 +570,13 @@ public class Chapter3Screen implements Screen {
         }
         panel.pad(40);
 
-        Label title = new Label("ВЫБОР СУДЬБЫ", new Label.LabelStyle() {{
+        Label title = new Label(game.languageManager.getText("choice_title"), new Label.LabelStyle() {{
             font = game.titleFont;
             fontColor = Color.GOLD;
         }});
         title.setFontScale(1.8f);
 
-        Label question = new Label("Что сделает Элис с Гиперкубом?", new Label.LabelStyle() {{
+        Label question = new Label(game.languageManager.getText("choice_question"), new Label.LabelStyle() {{
             font = game.font;
             fontColor = Color.WHITE;
         }});
@@ -589,9 +584,9 @@ public class Chapter3Screen implements Screen {
 
         TextButton btn1 = new TextButton("", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         Table btn1Table = new Table();
-        Label btn1Title = new Label("🌌 ОСТАТЬСЯ В ПРОШЛОМ", new Label.LabelStyle() {{ font = game.font; fontColor = Color.ORANGE; }});
+        Label btn1Title = new Label(game.languageManager.getText("choice_sacrifice"), new Label.LabelStyle() {{ font = game.font; fontColor = Color.ORANGE; }});
         btn1Title.setFontScale(1.2f);
-        Label btn1Sub = new Label("Спасти отца, но исчезнуть из настоящего", new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.LIGHT_GRAY; }});
+        Label btn1Sub = new Label(game.languageManager.getText("choice_sacrifice_desc"), new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.LIGHT_GRAY; }});
         btn1Sub.setFontScale(0.8f);
         btn1Table.add(btn1Title).padBottom(5).row();
         btn1Table.add(btn1Sub).row();
@@ -605,9 +600,9 @@ public class Chapter3Screen implements Screen {
 
         TextButton btn2 = new TextButton("", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         Table btn2Table = new Table();
-        Label btn2Title = new Label("✨ ВЕРНУТЬСЯ В НАСТОЯЩЕЕ", new Label.LabelStyle() {{ font = game.font; fontColor = Color.GREEN; }});
+        Label btn2Title = new Label(game.languageManager.getText("choice_return"), new Label.LabelStyle() {{ font = game.font; fontColor = Color.GREEN; }});
         btn2Title.setFontScale(1.2f);
-        Label btn2Sub = new Label("Отец останется в прошлом, мир спасён", new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.LIGHT_GRAY; }});
+        Label btn2Sub = new Label(game.languageManager.getText("choice_return_desc"), new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.LIGHT_GRAY; }});
         btn2Sub.setFontScale(0.8f);
         btn2Table.add(btn2Title).padBottom(5).row();
         btn2Table.add(btn2Sub).row();
@@ -621,9 +616,9 @@ public class Chapter3Screen implements Screen {
 
         TextButton btn3 = new TextButton("", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         Table btn3Table = new Table();
-        Label btn3Title = new Label("⏰ ЗАМОРОЗИТЬ ВРЕМЯ", new Label.LabelStyle() {{ font = game.font; fontColor = Color.CYAN; }});
+        Label btn3Title = new Label(game.languageManager.getText("choice_freeze"), new Label.LabelStyle() {{ font = game.font; fontColor = Color.CYAN; }});
         btn3Title.setFontScale(1.2f);
-        Label btn3Sub = new Label("Остановить момент выбора навсегда", new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.LIGHT_GRAY; }});
+        Label btn3Sub = new Label(game.languageManager.getText("choice_freeze_desc"), new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.LIGHT_GRAY; }});
         btn3Sub.setFontScale(0.8f);
         btn3Table.add(btn3Title).padBottom(5).row();
         btn3Table.add(btn3Sub).row();
@@ -655,28 +650,18 @@ public class Chapter3Screen implements Screen {
 
         switch (endingType) {
             case ENDING_SACRIFICE:
-                endingTitle = "КОНЦОВКА: ЖЕРТВА";
-                endingText = "Элис активирует Гиперкуб и переносится в прошлое.\n\n" +
-                        "Она успевает спасти отца, но сама исчезает из реальности.\n" +
-                        "Алекс живёт и помнит свою дочь.\n\n" +
-                        "Временная петля замкнулась.\n\n" +
-                        "★ СПАСИБО ЗА ИГРУ! ★";
+                endingTitle = game.languageManager.getText("ending_sacrifice_title");
+                endingText = game.languageManager.getText("ending_sacrifice_text");
                 titleColor = Color.ORANGE;
                 break;
             case ENDING_RETURN:
-                endingTitle = "КОНЦОВКА: ВОЗВРАЩЕНИЕ";
-                endingText = "Элис возвращается в настоящее, забрав частицу Гиперкуба.\n\n" +
-                        "Отец остался в прошлом, но мир спасён от временной аномалии.\n" +
-                        "Элис продолжает своё путешествие сквозь время...\n\n" +
-                        "★ СПАСИБО ЗА ИГРУ! ★";
+                endingTitle = game.languageManager.getText("ending_return_title");
+                endingText = game.languageManager.getText("ending_return_text");
                 titleColor = Color.GREEN;
                 break;
             case ENDING_CONTINUE:
-                endingTitle = "КОНЦОВКА: ЗАМОРОЗКА";
-                endingText = "Элис замораживает время в момент выбора.\n\n" +
-                        "Никто не знает, что произошло дальше.\n" +
-                        "Может быть, когда-нибудь время снова пойдёт...\n\n" +
-                        "★ СПАСИБО ЗА ИГРУ! ★";
+                endingTitle = game.languageManager.getText("ending_freeze_title");
+                endingText = game.languageManager.getText("ending_freeze_text");
                 titleColor = Color.CYAN;
                 break;
         }
@@ -714,7 +699,7 @@ public class Chapter3Screen implements Screen {
         textLabel.setWrap(true);
         textLabel.setAlignment(1);
 
-        TextButton menuBtn = new TextButton("В ГЛАВНОЕ МЕНЮ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton menuBtn = new TextButton(game.languageManager.getText("main_menu"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         menuBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -724,7 +709,7 @@ public class Chapter3Screen implements Screen {
             }
         });
 
-        TextButton exitBtn = new TextButton("ВЫЙТИ ИЗ ИГРЫ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_game"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         exitBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {

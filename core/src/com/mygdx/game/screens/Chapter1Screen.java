@@ -1,4 +1,4 @@
-package com.mygdx.game;
+package com.mygdx.game.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
@@ -17,6 +17,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -30,6 +31,8 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.mygdx.game.TheFateGame;
+import com.mygdx.game.screens.Chapter2Screen;
 import com.mygdx.game.screens.StartMenuScreen;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +55,6 @@ public class Chapter1Screen implements Screen {
     private Animation<TextureRegion> walkRightAnimation;
     private Animation<TextureRegion> walkLeftAnimation;
     private float stateTime;
-    private boolean movingUp = false, movingDown = false, movingLeft = false, movingRight = false;
     private boolean facingRight = true;
     private float speed = 5f;
     private String currentMap;
@@ -61,6 +63,19 @@ public class Chapter1Screen implements Screen {
     private String startMap;
     private String startSpawnId;
 
+    // JOYSTICK
+    private Texture joystickBaseTexture;
+    private Texture joystickKnobTexture;
+    private Vector2 joystickBasePos;
+    private Vector2 joystickKnobPos;
+    private float joystickBaseRadius = 70f;
+    private float joystickKnobRadius = 35f;
+    private boolean joystickActive = false;
+    private int joystickPointer = -1;
+    private Vector2 joystickDirection = new Vector2(0, 0);
+    private float screenW, screenH;
+
+    // UI STAGES
     private Stage uiStage;
     private Stage pauseStage;
     private Stage messageStage;
@@ -75,20 +90,22 @@ public class Chapter1Screen implements Screen {
     private String pendingInteractiveName = null;
     private Body pendingMaBody = null;
 
-    private ImageButton upBtn, downBtn, leftBtn, rightBtn, pauseBtn, interactionBtn, bookBtn;
-    private Texture upTex, downTex, leftTex, rightTex, pauseTex, interactionTex, bookTex;
+    // BUTTONS
+    private ImageButton jumpBtn, pauseBtn, interactionBtn, bookBtn;
+    private Texture jumpTex, pauseTex, interactionTex, bookTex;
 
+    // ITEMS & NOTES
     private Label itemsLabel;
     private int collectedItems = 0;
     private int totalItems = 5;
     private Map<Body, String> itemBodies = new HashMap<>();
     private Array<Body> bodiesToDestroy = new Array<>();
     private boolean allItemsCollected = false;
-
     private Map<Body, String> interactiveBodies = new HashMap<>();
-    private Texture currentImageTexture = null;
-    private boolean showingImage = false;
 
+    private Texture currentImageTexture = null;
+    private Texture currentNoteTexture = null;
+    private boolean showingImage = false;
     private Array<String> collectedNotes = new Array<>();
     private int currentNoteIndex = 0;
     private boolean showingBook = false;
@@ -121,11 +138,14 @@ public class Chapter1Screen implements Screen {
         this.camera.setToOrtho(false, worldWidth, worldHeight);
         this.camera.zoom = ZOOM;
 
-        this.uiStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
-        this.pauseStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
-        this.messageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
-        this.imageStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
-        this.bookStage = new Stage(new ExtendViewport(TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT));
+        this.screenW = TheFateGame.VIRTUAL_WIDTH;
+        this.screenH = TheFateGame.VIRTUAL_HEIGHT;
+
+        this.uiStage = new Stage(new ExtendViewport(screenW, screenH));
+        this.pauseStage = new Stage(new ExtendViewport(screenW, screenH));
+        this.messageStage = new Stage(new ExtendViewport(screenW, screenH));
+        this.imageStage = new Stage(new ExtendViewport(screenW, screenH));
+        this.bookStage = new Stage(new ExtendViewport(screenW, screenH));
 
         loadCollectedNotes();
         collectedItems = game.prefs.getInteger("chapter1_items", 0);
@@ -181,22 +201,32 @@ public class Chapter1Screen implements Screen {
             table.setFillParent(true);
             imageStage.addActor(table);
 
-            Image noteImage = new Image(currentImageTexture);
-            float screenW = TheFateGame.VIRTUAL_WIDTH;
-            float screenH = TheFateGame.VIRTUAL_HEIGHT;
-            float imgWidth = currentImageTexture.getWidth();
-            float imgHeight = currentImageTexture.getHeight();
+            int originalWidth = currentImageTexture.getWidth();
+            int originalHeight = currentImageTexture.getHeight();
 
-            float scale = Math.min(screenW * 0.9f / imgWidth, screenH * 0.85f / imgHeight);
-            noteImage.setSize(imgWidth * scale, imgHeight * scale);
-            table.add(noteImage).center();
+            float maxWidth = screenW * 0.85f;
+            float maxHeight = screenH * 0.8f;
 
-            Label continueLabel = new Label("Нажмите для продолжения", new Label.LabelStyle() {{
+            float scaleX = maxWidth / originalWidth;
+            float scaleY = maxHeight / originalHeight;
+            float scale = Math.min(scaleX, scaleY);
+
+            float displayWidth = originalWidth * scale;
+            float displayHeight = originalHeight * scale;
+
+            Image displayedImage = new Image(currentImageTexture);
+            displayedImage.setSize(displayWidth, displayHeight);
+
+            Table imageContainer = new Table();
+            imageContainer.add(displayedImage).center();
+            table.add(imageContainer).center().padBottom(20);
+
+            Label continueLabel = new Label(game.languageManager.getText("tap_to_continue"), new Label.LabelStyle() {{
                 font = game.font;
                 fontColor = com.badlogic.gdx.graphics.Color.WHITE;
             }});
             continueLabel.setFontScale(1.2f);
-            table.add(continueLabel).padTop(30).center();
+            table.add(continueLabel).padTop(20).center();
 
             imageStage.addListener(new ClickListener() {
                 @Override
@@ -210,16 +240,25 @@ public class Chapter1Screen implements Screen {
 
         } catch (Exception e) {
             hideCurrentImage();
-            showMessage("Не удалось открыть записку", 1f);
+            showMessage(game.languageManager.getText("failed_to_load_note"), 1.5f);
         }
+    }
+
+    private void hideCurrentImage() {
+        showingImage = false;
+        imageStage.clear();
+        if (currentImageTexture != null) {
+            currentImageTexture.dispose();
+            currentImageTexture = null;
+        }
+        Gdx.input.setInputProcessor(uiStage);
     }
 
     private void showBook() {
         if (collectedNotes.size == 0) {
-            showMessage("У вас пока нет записок!", 1.5f);
+            showMessage(game.languageManager.getText("no_notes"), 1.5f);
             return;
         }
-
         showingBook = true;
         currentNoteIndex = 0;
         showCurrentNote();
@@ -242,25 +281,42 @@ public class Chapter1Screen implements Screen {
         bookStage.addActor(mainTable);
 
         Table contentTable = new Table();
+        contentTable.center();
 
-        Label titleLabel = new Label("ЗАПИСКА №" + noteNumber, new Label.LabelStyle() {{
+        Label titleLabel = new Label(game.languageManager.getText("note_prefix") + noteNumber, new Label.LabelStyle() {{
             font = game.titleFont;
             fontColor = com.badlogic.gdx.graphics.Color.GOLD;
         }});
-        contentTable.add(titleLabel).padBottom(20).row();
+        titleLabel.setFontScale(1.3f);
+        contentTable.add(titleLabel).padBottom(25).row();
 
         try {
-            Texture noteTex = new Texture(noteId + ".png");
-            Image noteImage = new Image(noteTex);
-            float screenW = TheFateGame.VIRTUAL_WIDTH;
-            float screenH = TheFateGame.VIRTUAL_HEIGHT;
-            float imgWidth = noteTex.getWidth();
-            float imgHeight = noteTex.getHeight();
-            float scale = Math.min(screenW * 0.7f / imgWidth, screenH * 0.55f / imgHeight);
-            noteImage.setSize(imgWidth * scale, imgHeight * scale);
-            contentTable.add(noteImage).center().padBottom(30);
+            if (currentNoteTexture != null) {
+                currentNoteTexture.dispose();
+            }
+            currentNoteTexture = new Texture(noteId + ".png");
+            int originalWidth = currentNoteTexture.getWidth();
+            int originalHeight = currentNoteTexture.getHeight();
+
+            float maxWidth = screenW * 0.75f;
+            float maxHeight = screenH * 0.55f;
+
+            float scaleX = maxWidth / originalWidth;
+            float scaleY = maxHeight / originalHeight;
+            float scale = Math.min(scaleX, scaleY);
+
+            float displayWidth = originalWidth * scale;
+            float displayHeight = originalHeight * scale;
+
+            Image noteImage = new Image(currentNoteTexture);
+            noteImage.setSize(displayWidth, displayHeight);
+
+            Table imageContainer = new Table();
+            imageContainer.add(noteImage).center();
+            contentTable.add(imageContainer).center().padBottom(30);
+
         } catch (Exception e) {
-            Label errorLabel = new Label("Не удалось загрузить изображение", new Label.LabelStyle() {{
+            Label errorLabel = new Label(game.languageManager.getText("failed_to_load_note"), new Label.LabelStyle() {{
                 font = game.font;
                 fontColor = com.badlogic.gdx.graphics.Color.RED;
             }});
@@ -268,43 +324,63 @@ public class Chapter1Screen implements Screen {
         }
 
         Table navTable = new Table();
+        navTable.center();
 
         if (currentNoteIndex > 0) {
-            TextButton prevBtn = new TextButton("← ПРЕДЫДУЩАЯ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+            TextButton prevBtn = new TextButton("← " + game.languageManager.getText("previous"), new TextButton.TextButtonStyle() {{
+                font = game.smallFont;
+            }});
             prevBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent e, float x, float y) {
+                    if (currentNoteTexture != null) {
+                        currentNoteTexture.dispose();
+                        currentNoteTexture = null;
+                    }
                     currentNoteIndex--;
                     showCurrentNote();
                 }
             });
-            navTable.add(prevBtn).width(160).height(50).padRight(20);
+            navTable.add(prevBtn).width(160).height(50).padRight(25);
         }
 
-        Label pageLabel = new Label("Страница " + (currentNoteIndex + 1) + " из " + collectedNotes.size, new Label.LabelStyle() {{
+        Label pageLabel = new Label(game.languageManager.getText("page") + " " + (currentNoteIndex + 1) + " " +
+                game.languageManager.getText("of") + " " + collectedNotes.size, new Label.LabelStyle() {{
             font = game.smallFont;
             fontColor = com.badlogic.gdx.graphics.Color.WHITE;
         }});
-        navTable.add(pageLabel);
+        navTable.add(pageLabel).padLeft(15).padRight(15);
 
         if (currentNoteIndex < collectedNotes.size - 1) {
-            TextButton nextBtn = new TextButton("СЛЕДУЮЩАЯ →", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+            TextButton nextBtn = new TextButton(game.languageManager.getText("next") + " →", new TextButton.TextButtonStyle() {{
+                font = game.smallFont;
+            }});
             nextBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent e, float x, float y) {
+                    if (currentNoteTexture != null) {
+                        currentNoteTexture.dispose();
+                        currentNoteTexture = null;
+                    }
                     currentNoteIndex++;
                     showCurrentNote();
                 }
             });
-            navTable.add(nextBtn).width(160).height(50).padLeft(20);
+            navTable.add(nextBtn).width(160).height(50).padLeft(25);
         }
 
         contentTable.add(navTable).padBottom(30).row();
 
-        TextButton closeBtn = new TextButton("ЗАКРЫТЬ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        TextButton closeBtn = new TextButton(game.languageManager.getText("close"), new TextButton.TextButtonStyle() {{
+            font = game.smallFont;
+        }});
         closeBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
+                if (currentNoteTexture != null) {
+                    currentNoteTexture.dispose();
+                    currentNoteTexture = null;
+                }
                 showingBook = false;
                 bookStage.clear();
                 Gdx.input.setInputProcessor(uiStage);
@@ -324,7 +400,10 @@ public class Chapter1Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         messageStage.addActor(table);
-        Label label = new Label(msg, new Label.LabelStyle() {{ font = game.smallFont; fontColor = com.badlogic.gdx.graphics.Color.WHITE; }});
+        Label label = new Label(msg, new Label.LabelStyle() {{
+            font = game.smallFont;
+            fontColor = com.badlogic.gdx.graphics.Color.WHITE;
+        }});
         label.setFontScale(1.2f);
         table.add(label).center();
         Timer.schedule(new Timer.Task() {
@@ -353,13 +432,40 @@ public class Chapter1Screen implements Screen {
             standRight = standLeft = new TextureRegion(fallback);
         }
 
-        upTex = loadTextureWithFallback("button/button_up.png", 0.2f, 0.8f, 0.2f);
-        downTex = loadTextureWithFallback("button/button_down.png", 0.2f, 0.8f, 0.2f);
-        leftTex = loadTextureWithFallback("button/button_left.png", 0.2f, 0.4f, 0.8f);
-        rightTex = loadTextureWithFallback("button/button_right.png", 0.2f, 0.4f, 0.8f);
+        jumpTex = loadTextureWithFallback("button/button_jump.png", 0.2f, 0.8f, 0.2f);
         pauseTex = loadTextureWithFallback("button/button_pause.png", 0.8f, 0.8f, 0.2f);
         interactionTex = loadTextureWithFallback("button/button_interaction.png", 0.2f, 0.8f, 0.2f);
         bookTex = loadTextureWithFallback("item/book3.png", 0.6f, 0.4f, 0.2f);
+
+        joystickBaseTexture = createJoystickBaseTexture();
+        joystickKnobTexture = createJoystickKnobTexture();
+
+        joystickBasePos = new Vector2(150 * uiScale, 150 * uiScale);
+        joystickKnobPos = new Vector2(joystickBasePos.x, joystickBasePos.y);
+    }
+
+    private Texture createJoystickBaseTexture() {
+        int size = (int)(joystickBaseRadius * 2);
+        Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0.3f, 0.3f, 0.4f, 0.6f);
+        pixmap.fillCircle((int)joystickBaseRadius, (int)joystickBaseRadius, (int)joystickBaseRadius);
+        pixmap.setColor(0.5f, 0.5f, 0.6f, 0.8f);
+        pixmap.drawCircle((int)joystickBaseRadius, (int)joystickBaseRadius, (int)(joystickBaseRadius - 2));
+        Texture tex = new Texture(pixmap);
+        pixmap.dispose();
+        return tex;
+    }
+
+    private Texture createJoystickKnobTexture() {
+        int size = (int)(joystickKnobRadius * 2);
+        Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0.8f, 0.8f, 0.9f, 0.9f);
+        pixmap.fillCircle((int)joystickKnobRadius, (int)joystickKnobRadius, (int)joystickKnobRadius);
+        pixmap.setColor(1f, 1f, 1f, 1f);
+        pixmap.drawCircle((int)joystickKnobRadius, (int)joystickKnobRadius, (int)(joystickKnobRadius - 3));
+        Texture tex = new Texture(pixmap);
+        pixmap.dispose();
+        return tex;
     }
 
     private Texture loadTextureWithFallback(String path, float r, float g, float b) {
@@ -377,60 +483,25 @@ public class Chapter1Screen implements Screen {
     }
 
     private void createUI() {
-        float screenW = TheFateGame.VIRTUAL_WIDTH;
-        float screenH = TheFateGame.VIRTUAL_HEIGHT;
-
-        float btnMargin = 20 * uiScale;
         float btnBottomY = 30 * uiScale;
-        float btnAreaCenter = screenW / 5;
+        float rightMargin = 25 * uiScale;
+        float topMargin = 20 * uiScale;
 
-        upBtn = new ImageButton(new TextureRegionDrawable(upTex));
-        upBtn.setSize(btnSize, btnSize);
-        upBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY + btnSize + btnMargin);
-        upBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage && !showingBook) movingUp = true;
-                return true;
+        jumpBtn = new ImageButton(new TextureRegionDrawable(jumpTex));
+        jumpBtn.setSize(btnSize, btnSize);
+        jumpBtn.setPosition(screenW - btnSize - rightMargin, btnBottomY);
+        jumpBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent e, float x, float y) {
+                if (!isPaused && !isTransitioning && !showingImage && !showingBook) {
+                    // В Chapter1 нет гравитации, прыжок не нужен
+                }
             }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingUp = false; }
-        });
-
-        downBtn = new ImageButton(new TextureRegionDrawable(downTex));
-        downBtn.setSize(btnSize, btnSize);
-        downBtn.setPosition(btnAreaCenter - btnSize/2, btnBottomY);
-        downBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage && !showingBook) movingDown = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingDown = false; }
-        });
-
-        leftBtn = new ImageButton(new TextureRegionDrawable(leftTex));
-        leftBtn.setSize(btnSize, btnSize);
-        leftBtn.setPosition(btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2);
-        leftBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage && !showingBook) movingLeft = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingLeft = false; }
-        });
-
-        rightBtn = new ImageButton(new TextureRegionDrawable(rightTex));
-        rightBtn.setSize(btnSize, btnSize);
-        rightBtn.setPosition(btnAreaCenter + btnMargin, btnBottomY + btnSize/2);
-        rightBtn.addListener(new ClickListener() {
-            @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
-                if (!isPaused && !isTransitioning && !showingImage && !showingBook) movingRight = true;
-                return true;
-            }
-            @Override public void touchUp(InputEvent e, float x, float y, int p, int b) { movingRight = false; }
         });
 
         pauseBtn = new ImageButton(new TextureRegionDrawable(pauseTex));
         pauseBtn.setSize(pauseSize, pauseSize);
-        pauseBtn.setPosition(screenW - pauseSize - 20 * uiScale, screenH - pauseSize - 20 * uiScale);
+        pauseBtn.setPosition(screenW - pauseSize - topMargin, screenH - pauseSize - topMargin);
         pauseBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 if (!showingImage && !showingBook) {
@@ -444,7 +515,7 @@ public class Chapter1Screen implements Screen {
 
         bookBtn = new ImageButton(new TextureRegionDrawable(bookTex));
         bookBtn.setSize(pauseSize, pauseSize);
-        bookBtn.setPosition(15 * uiScale, screenH - pauseSize - 20 * uiScale);
+        bookBtn.setPosition(screenW - (pauseSize * 2) - (topMargin * 1.5f), screenH - pauseSize - topMargin);
         bookBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -455,8 +526,8 @@ public class Chapter1Screen implements Screen {
         });
 
         interactionBtn = new ImageButton(new TextureRegionDrawable(interactionTex));
-        interactionBtn.setSize(game.getScaledSize(80), game.getScaledSize(80));
-        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(40), screenH / 2 - game.getScaledSize(50));
+        interactionBtn.setSize(game.getScaledSize(90), game.getScaledSize(90));
+        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(45), screenH / 2 - game.getScaledSize(60));
         interactionBtn.setVisible(false);
         interactionBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
@@ -488,10 +559,7 @@ public class Chapter1Screen implements Screen {
             }
         });
 
-        uiStage.addActor(upBtn);
-        uiStage.addActor(downBtn);
-        uiStage.addActor(leftBtn);
-        uiStage.addActor(rightBtn);
+        uiStage.addActor(jumpBtn);
         uiStage.addActor(pauseBtn);
         uiStage.addActor(bookBtn);
         uiStage.addActor(interactionBtn);
@@ -504,8 +572,60 @@ public class Chapter1Screen implements Screen {
         updateItemsLabel();
     }
 
+    private void updateJoystick() {
+        for (int i = 0; i < 5; i++) {
+            if (Gdx.input.isTouched(i)) {
+                float touchX = Gdx.input.getX(i);
+                float touchY = Gdx.input.getY(i);
+
+                Vector3 stageCoords = uiStage.getViewport().unproject(new Vector3(touchX, touchY, 0));
+                float x = stageCoords.x;
+                float y = stageCoords.y;
+
+                if (!joystickActive && !isPaused && !isTransitioning && !showingImage && !showingBook) {
+                    float dx = x - joystickBasePos.x;
+                    float dy = y - joystickBasePos.y;
+                    float dist = (float)Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist <= joystickBaseRadius + 20) {
+                        joystickActive = true;
+                        joystickPointer = i;
+                    }
+                }
+
+                if (joystickActive && joystickPointer == i) {
+                    float dx = x - joystickBasePos.x;
+                    float dy = y - joystickBasePos.y;
+                    float dist = (float)Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > joystickBaseRadius) {
+                        dx = dx / dist * joystickBaseRadius;
+                        dy = dy / dist * joystickBaseRadius;
+                        dist = joystickBaseRadius;
+                    }
+
+                    joystickKnobPos.set(joystickBasePos.x + dx, joystickBasePos.y + dy);
+
+                    if (dist > 5) {
+                        joystickDirection.set(dx / joystickBaseRadius, dy / joystickBaseRadius);
+                    } else {
+                        joystickDirection.set(0, 0);
+                    }
+                    return;
+                }
+            }
+        }
+
+        if (joystickActive) {
+            joystickActive = false;
+            joystickPointer = -1;
+            joystickDirection.set(0, 0);
+            joystickKnobPos.set(joystickBasePos.x, joystickBasePos.y);
+        }
+    }
+
     private void updateItemsLabel() {
-        itemsLabel.setText("Предметы: " + collectedItems + "/5");
+        itemsLabel.setText(game.languageManager.format("items_collected", collectedItems, totalItems));
     }
 
     private void collectItem(Body itemBody, String itemId) {
@@ -544,7 +664,7 @@ public class Chapter1Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         messageStage.addActor(table);
-        Label label = new Label("ВСЕ ПРЕДМЕТЫ СОБРАНЫ!\nИдите к выходу из главы", new Label.LabelStyle() {{
+        Label label = new Label(game.languageManager.getText("all_items_collected"), new Label.LabelStyle() {{
             font = game.smallFont;
             fontColor = com.badlogic.gdx.graphics.Color.GREEN;
         }});
@@ -570,11 +690,18 @@ public class Chapter1Screen implements Screen {
         table.setFillParent(true);
         messageStage.addActor(table);
 
-        Label titleLabel = new Label("ГЛАВА 1 ПРОЙДЕНА!", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        Label titleLabel = new Label(game.languageManager.getText("chapter1_complete_title"), new Label.LabelStyle() {{
+            font = game.titleFont;
+            fontColor = com.badlogic.gdx.graphics.Color.GOLD;
+        }});
         titleLabel.setFontScale(1.8f);
-        Label subtitleLabel = new Label("Открыта Глава 2!", new Label.LabelStyle() {{ font = game.font; }});
+        Label subtitleLabel = new Label(game.languageManager.getText("chapter2_unlocked"), new Label.LabelStyle() {{
+            font = game.font;
+        }});
         subtitleLabel.setFontScale(1.2f);
-        Label loadingLabel = new Label("Загрузка...", new Label.LabelStyle() {{ font = game.font; }});
+        Label loadingLabel = new Label(game.languageManager.getText("loading"), new Label.LabelStyle() {{
+            font = game.font;
+        }});
 
         table.add(titleLabel).center().padBottom(20);
         table.row();
@@ -591,7 +718,7 @@ public class Chapter1Screen implements Screen {
             @Override
             public void run() {
                 messageStage.clear();
-                game.setScreen(new com.mygdx.game.screens.Chapter2Screen(game));
+                game.setScreen(new Chapter2Screen(game));
             }
         }, 2);
     }
@@ -608,9 +735,9 @@ public class Chapter1Screen implements Screen {
 
         Table dialog = new Table();
         dialog.pad(30);
-        Label title = new Label("ПАУЗА", new Label.LabelStyle() {{ font = game.font; }});
+        Label title = new Label(game.languageManager.getText("game_paused"), new Label.LabelStyle() {{ font = game.font; }});
         title.setFontScale(2f);
-        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton continueBtn = new TextButton(game.languageManager.getText("resume"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         continueBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 isPaused = false;
@@ -619,7 +746,7 @@ public class Chapter1Screen implements Screen {
                 if (game.gameMusic != null && game.musicEnabled) game.gameMusic.play();
             }
         });
-        TextButton exitBtn = new TextButton("В МЕНЮ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_to_menu"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         exitBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 saveProgress();
@@ -653,16 +780,22 @@ public class Chapter1Screen implements Screen {
             table.setFillParent(true);
             imageStage.addActor(table);
 
-            Image displayedImage = new Image(currentImageTexture);
-            float screenW = TheFateGame.VIRTUAL_WIDTH;
-            float screenH = TheFateGame.VIRTUAL_HEIGHT;
-            float imgWidth = currentImageTexture.getWidth();
-            float imgHeight = currentImageTexture.getHeight();
-            float scale = Math.min(screenW * 0.8f / imgWidth, screenH * 0.8f / imgHeight);
-            displayedImage.setSize(imgWidth * scale, imgHeight * scale);
-            table.add(displayedImage).center();
+            int originalWidth = currentImageTexture.getWidth();
+            int originalHeight = currentImageTexture.getHeight();
+            float maxWidth = screenW * 0.8f;
+            float maxHeight = screenH * 0.8f;
+            float scale = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
 
-            Label continueLabel = new Label("Нажмите для продолжения", new Label.LabelStyle() {{ font = game.font; }});
+            Image displayedImage = new Image(currentImageTexture);
+            displayedImage.setSize(originalWidth * scale, originalHeight * scale);
+
+            Table imageContainer = new Table();
+            imageContainer.add(displayedImage).center();
+            table.add(imageContainer).center();
+
+            Label continueLabel = new Label(game.languageManager.getText("tap_to_continue"), new Label.LabelStyle() {{
+                font = game.font;
+            }});
             continueLabel.setFontScale(1.2f);
             table.add(continueLabel).padTop(30).center();
 
@@ -679,16 +812,6 @@ public class Chapter1Screen implements Screen {
         } catch (Exception e) {
             hideCurrentImage();
         }
-    }
-
-    private void hideCurrentImage() {
-        showingImage = false;
-        imageStage.clear();
-        if (currentImageTexture != null) {
-            currentImageTexture.dispose();
-            currentImageTexture = null;
-        }
-        Gdx.input.setInputProcessor(uiStage);
     }
 
     private void loadMap(String mapPath) {
@@ -803,10 +926,7 @@ public class Chapter1Screen implements Screen {
             return;
         }
 
-        // Отключаем ввод на время перехода
         Gdx.input.setInputProcessor(null);
-
-        // Загружаем новую карту
         loadMap(targetMap);
         recreateWorld();
         createPlayer();
@@ -815,8 +935,6 @@ public class Chapter1Screen implements Screen {
         Vector2 spawnPos = findSpawnPosition(targetSpawnId);
         if (spawnPos != null) playerBody.setTransform(spawnPos.x, spawnPos.y, 0);
         saveProgress();
-
-        // Восстанавливаем ввод
         Gdx.input.setInputProcessor(uiStage);
     }
 
@@ -1086,21 +1204,23 @@ public class Chapter1Screen implements Screen {
     private void update(float delta) {
         if (isPaused || isTransitioning || showingImage || showingBook) return;
 
-        Vector2 vel = playerBody.getLinearVelocity();
-        float velX = 0, velY = 0;
-        if (movingRight) velX = speed;
-        if (movingLeft) velX = -speed;
-        if (movingUp) velY = speed;
-        if (movingDown) velY = -speed;
-        if (velX != 0 && velY != 0) { velX *= 0.707f; velY *= 0.707f; }
-        vel.x = velX; vel.y = velY;
-        playerBody.setLinearVelocity(vel);
-        if (movingLeft || movingRight) stateTime += delta;
-        else stateTime = 0;
-        if (movingRight) facingRight = true;
-        if (movingLeft) facingRight = false;
+        updateJoystick();
+
+        float velX = joystickDirection.x * speed;
+        float velY = joystickDirection.y * speed;
+
+        playerBody.setLinearVelocity(velX, velY);
+
+        if (Math.abs(velX) > 0.1f || Math.abs(velY) > 0.1f) {
+            stateTime += delta;
+            facingRight = velX > 0;
+        } else {
+            stateTime = 0;
+        }
+
         world.step(delta, 6, 2);
         destroyMarkedBodies();
+
         Vector2 pos = playerBody.getPosition();
         camera.position.set(pos.x * PPM, pos.y * PPM, 0);
         camera.update();
@@ -1114,12 +1234,30 @@ public class Chapter1Screen implements Screen {
 
     private void drawPlayer() {
         TextureRegion region;
-        if (movingLeft) region = walkLeftAnimation.getKeyFrame(stateTime, true);
-        else if (movingRight) region = walkRightAnimation.getKeyFrame(stateTime, true);
-        else region = facingRight ? standRight : standLeft;
+        if (Math.abs(joystickDirection.x) > 0.1f || Math.abs(joystickDirection.y) > 0.1f) {
+            if (joystickDirection.x < 0) region = walkLeftAnimation.getKeyFrame(stateTime, true);
+            else region = walkRightAnimation.getKeyFrame(stateTime, true);
+        } else {
+            region = facingRight ? standRight : standLeft;
+        }
         Vector2 pos = playerBody.getPosition();
         float size = 64f;
         batch.draw(region, pos.x * PPM - size/2, pos.y * PPM - size/2, size, size);
+    }
+
+    private void drawJoystick() {
+        if (joystickBaseTexture != null) {
+            batch.draw(joystickBaseTexture,
+                    joystickBasePos.x - joystickBaseRadius,
+                    joystickBasePos.y - joystickBaseRadius,
+                    joystickBaseRadius * 2, joystickBaseRadius * 2);
+        }
+        if (joystickKnobTexture != null) {
+            batch.draw(joystickKnobTexture,
+                    joystickKnobPos.x - joystickKnobRadius,
+                    joystickKnobPos.y - joystickKnobRadius,
+                    joystickKnobRadius * 2, joystickKnobRadius * 2);
+        }
     }
 
     @Override
@@ -1136,6 +1274,11 @@ public class Chapter1Screen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         drawPlayer();
+        batch.end();
+
+        batch.setProjectionMatrix(uiStage.getCamera().combined);
+        batch.begin();
+        drawJoystick();
         batch.end();
 
         uiStage.act(delta);
@@ -1167,20 +1310,42 @@ public class Chapter1Screen implements Screen {
         camera.viewportWidth = worldWidth;
         camera.viewportHeight = worldHeight;
         camera.update();
+
         uiStage.getViewport().update(width, height, true);
         pauseStage.getViewport().update(width, height, true);
         messageStage.getViewport().update(width, height, true);
         if (imageStage != null) imageStage.getViewport().update(width, height, true);
         if (bookStage != null) bookStage.getViewport().update(width, height, true);
+
         uiScale = game.getUIScale();
         btnSize = game.getScaledSize(100);
         pauseSize = game.getScaledSize(70);
+        screenW = TheFateGame.VIRTUAL_WIDTH;
+        screenH = TheFateGame.VIRTUAL_HEIGHT;
+
+        joystickBasePos = new Vector2(150 * uiScale, 150 * uiScale);
+        joystickKnobPos = new Vector2(joystickBasePos.x, joystickBasePos.y);
+        joystickBaseRadius = 70 * uiScale;
+        joystickKnobRadius = 35 * uiScale;
+
+        if (joystickBaseTexture != null) joystickBaseTexture.dispose();
+        if (joystickKnobTexture != null) joystickKnobTexture.dispose();
+        joystickBaseTexture = createJoystickBaseTexture();
+        joystickKnobTexture = createJoystickKnobTexture();
+
         uiStage.clear();
         createUI();
     }
 
-    @Override public void show() { Gdx.input.setInputProcessor(isPaused ? pauseStage : uiStage); game.startGameMusic(); }
-    @Override public void hide() { game.stopGameMusic(); }
+    @Override public void show() {
+        Gdx.input.setInputProcessor(isPaused ? pauseStage : uiStage);
+        game.startGameMusic();
+    }
+
+    @Override public void hide() {
+        game.stopGameMusic();
+    }
+
     @Override public void dispose() {
         uiStage.dispose();
         pauseStage.dispose();
@@ -1188,10 +1353,14 @@ public class Chapter1Screen implements Screen {
         if (imageStage != null) imageStage.dispose();
         if (bookStage != null) bookStage.dispose();
         if (currentImageTexture != null) currentImageTexture.dispose();
+        if (currentNoteTexture != null) currentNoteTexture.dispose();
+        if (joystickBaseTexture != null) joystickBaseTexture.dispose();
+        if (joystickKnobTexture != null) joystickKnobTexture.dispose();
         if (world != null) world.dispose();
         if (tiledMap != null) tiledMap.dispose();
         if (tiledMapRenderer != null) tiledMapRenderer.dispose();
     }
+
     @Override public void pause() {}
     @Override public void resume() {}
 }

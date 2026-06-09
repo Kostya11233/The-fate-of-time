@@ -3,6 +3,7 @@ package com.mygdx.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -11,7 +12,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
-import com.mygdx.game.Chapter1Screen;
 
 public class ChapterSelectScreen implements Screen {
     private final TheFateGame game;
@@ -32,16 +32,17 @@ public class ChapterSelectScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.titleFont;
+        Label.LabelStyle titleStyle = new Label.LabelStyle();
+        titleStyle.font = game.titleFont;
+        titleStyle.fontColor = Color.GOLD;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
-        Label titleLabel = new Label("ВЫБЕРИТЕ ГЛАВУ", labelStyle);
+        Label titleLabel = new Label(game.languageManager.getText("select_chapter"), titleStyle);
         titleLabel.setFontScale(1.8f);
 
-        TextButton chapter1Btn = new TextButton("ПЕРВАЯ ГЛАВА", buttonStyle);
+        TextButton chapter1Btn = new TextButton(game.languageManager.getText("chapter_1"), buttonStyle);
         chapter1Btn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -50,7 +51,10 @@ public class ChapterSelectScreen implements Screen {
             }
         });
 
-        String chapter2Text = chapter2Unlocked ? "ВТОРАЯ ГЛАВА" : "ВТОРАЯ ГЛАВА (ЗАКРЫТА)";
+        String chapter2Text = chapter2Unlocked ?
+                game.languageManager.getText("chapter_2") :
+                game.languageManager.getText("chapter_2") + " (" + game.languageManager.getText("chapter_locked") + ")";
+
         TextButton chapter2Btn = new TextButton(chapter2Text, buttonStyle);
         if (!chapter2Unlocked) {
             chapter2Btn.setDisabled(true);
@@ -65,7 +69,10 @@ public class ChapterSelectScreen implements Screen {
             }
         });
 
-        String chapter3Text = chapter3Unlocked ? "ТРЕТЬЯ ГЛАВА" : "ТРЕТЬЯ ГЛАВА (ЗАКРЫТА)";
+        String chapter3Text = chapter3Unlocked ?
+                game.languageManager.getText("chapter_3") :
+                game.languageManager.getText("chapter_3") + " (" + game.languageManager.getText("chapter_locked") + ")";
+
         TextButton chapter3Btn = new TextButton(chapter3Text, buttonStyle);
         if (!chapter3Unlocked) {
             chapter3Btn.setDisabled(true);
@@ -80,7 +87,7 @@ public class ChapterSelectScreen implements Screen {
             }
         });
 
-        TextButton backBtn = new TextButton("НАЗАД", buttonStyle);
+        TextButton backBtn = new TextButton(game.languageManager.getText("back"), buttonStyle);
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
@@ -94,6 +101,13 @@ public class ChapterSelectScreen implements Screen {
         table.add(chapter3Btn).width(350).height(80).padBottom(30).row();
         table.add(backBtn).width(250).height(60).row();
         table.center();
+    }
+
+    public void refreshUI() {
+        chapter2Unlocked = game.prefs.getBoolean("chapter2_unlocked", false);
+        chapter3Unlocked = game.prefs.getBoolean("chapter3_unlocked", false);
+        stage.clear();
+        createUI();
     }
 
     @Override
@@ -112,10 +126,7 @@ public class ChapterSelectScreen implements Screen {
     @Override
     public void show() {
         Gdx.input.setInputProcessor(stage);
-        chapter2Unlocked = game.prefs.getBoolean("chapter2_unlocked", false);
-        chapter3Unlocked = game.prefs.getBoolean("chapter3_unlocked", false);
-        stage.clear();
-        createUI();
+        refreshUI();
     }
 
     @Override

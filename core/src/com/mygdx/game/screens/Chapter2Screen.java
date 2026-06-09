@@ -2,6 +2,7 @@ package com.mygdx.game.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -10,7 +11,6 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapLayer;
-import com.mygdx.game.screens.Chapter3Screen;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -32,7 +32,6 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.mygdx.game.TheFateGame;
-import com.mygdx.game.screens.StartMenuScreen;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -329,25 +328,25 @@ public class Chapter2Screen implements Screen {
         if (dialogBgTexture != null) panel.setBackground(new TextureRegionDrawable(dialogBgTexture));
         panel.pad(30);
 
-        Label title = new Label("ЗАДАНИЯ", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        Label title = new Label(game.languageManager.getText("quests"), new Label.LabelStyle() {{ font = game.titleFont; fontColor = Color.GOLD; }});
         Table tasks = new Table();
 
         if (currentLevel == 1) {
-            addTask(tasks, "Поговорить с Выжившим", trashCollected > 0 || exitUnlocked);
-            addTask(tasks, "Собрать мусор (" + trashCollected + "/" + totalTrash + ")", trashCollected >= totalTrash);
-            addTask(tasks, "Идти к выходу", exitUnlocked);
+            addTask(tasks, game.languageManager.getText("talk_to_survivor"), trashCollected > 0 || exitUnlocked);
+            addTask(tasks, game.languageManager.format("trash_task", trashCollected, totalTrash), trashCollected >= totalTrash);
+            addTask(tasks, game.languageManager.getText("go_to_exit"), exitUnlocked);
         } else if (currentLevel == 2) {
-            addTask(tasks, "Поговорить с Химиком", talkedToChemist);
-            addTask(tasks, "Найти запчасти (" + partsCollected + "/3)", partsCollected >= 3);
-            addTask(tasks, "Вернуться к Химику", partsCollected >= 3 && !exitUnlocked);
-            addTask(tasks, "Идти к выходу", exitUnlocked);
+            addTask(tasks, game.languageManager.getText("talk_to_chemist"), talkedToChemist);
+            addTask(tasks, game.languageManager.format("find_parts", partsCollected), partsCollected >= 3);
+            addTask(tasks, game.languageManager.getText("return_to_chemist"), partsCollected >= 3 && !exitUnlocked);
+            addTask(tasks, game.languageManager.getText("go_to_exit"), exitUnlocked);
         } else if (currentLevel == 3) {
-            addTask(tasks, "Поговорить с Часовщиком", shardMinigame || shardsClicked > 0);
-            addTask(tasks, "Собрать осколки (" + shardsClicked + "/" + totalShards + ")", shardsClicked >= totalShards);
-            addTask(tasks, "Идти к выходу", exitUnlocked);
+            addTask(tasks, game.languageManager.getText("talk_to_watchmaker"), shardMinigame || shardsClicked > 0);
+            addTask(tasks, game.languageManager.format("collect_shards", shardsClicked, totalShards), shardsClicked >= totalShards);
+            addTask(tasks, game.languageManager.getText("go_to_exit"), exitUnlocked);
         }
 
-        TextButton closeBtn = new TextButton("ЗАКРЫТЬ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        TextButton closeBtn = new TextButton(game.languageManager.getText("close"), new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         closeBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 questStage.clear();
@@ -365,7 +364,7 @@ public class Chapter2Screen implements Screen {
     private void addTask(Table table, String text, boolean completed) {
         Label.LabelStyle style = new Label.LabelStyle();
         style.font = game.smallFont;
-        style.fontColor = completed ? com.badlogic.gdx.graphics.Color.GREEN : com.badlogic.gdx.graphics.Color.WHITE;
+        style.fontColor = completed ? Color.GREEN : Color.WHITE;
         table.add(new Label((completed ? "✓ " : "○ ") + text, style)).padBottom(8).left().row();
     }
 
@@ -396,7 +395,7 @@ public class Chapter2Screen implements Screen {
         Label textLabel = new Label(dialogLines[dialogIndex], new Label.LabelStyle() {{ font = game.smallFont; }});
         textLabel.setWrap(true);
 
-        TextButton nextBtn = new TextButton("ДАЛЕЕ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        TextButton nextBtn = new TextButton(game.languageManager.getText("next_level"), new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         nextBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 dialogIndex++;
@@ -490,8 +489,14 @@ public class Chapter2Screen implements Screen {
         Table table = new Table();
         table.setFillParent(true);
         messageStage.addActor(table);
-        String[] titles = {"УРОВЕНЬ 1\nЗаброшенная лаборатория", "УРОВЕНЬ 2\nЗона экспериментов", "УРОВЕНЬ 3\nХранилище времени"};
-        Label label = new Label(titles[currentLevel - 1], new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+
+        String[] titles = {
+                game.languageManager.getText("level_1_title"),
+                game.languageManager.getText("level_2_title"),
+                game.languageManager.getText("level_3_title")
+        };
+
+        Label label = new Label(titles[currentLevel - 1], new Label.LabelStyle() {{ font = game.titleFont; fontColor = Color.GOLD; }});
         label.setFontScale(1.3f);
         table.add(label).center();
         Timer.schedule(new Timer.Task() {
@@ -682,7 +687,7 @@ public class Chapter2Screen implements Screen {
                     Fixture fix = body.createFixture(shape, 0);
                     fix.setSensor(true);
                     shape.dispose();
-                    interactiveBodies.put(body, "Выживший");
+                    interactiveBodies.put(body, game.languageManager.getText("survivor_name"));
                 }
             }
         } else if (currentLevel == 2) {
@@ -700,7 +705,7 @@ public class Chapter2Screen implements Screen {
                     Fixture fix = body.createFixture(shape, 0);
                     fix.setSensor(true);
                     shape.dispose();
-                    interactiveBodies.put(body, "Химик");
+                    interactiveBodies.put(body, game.languageManager.getText("chemist_name"));
                 }
             }
             String[] parts = {"item22", "item222", "item2222"};
@@ -738,7 +743,7 @@ public class Chapter2Screen implements Screen {
                     Fixture fix = body.createFixture(shape, 0);
                     fix.setSensor(true);
                     shape.dispose();
-                    interactiveBodies.put(body, "Часовщик");
+                    interactiveBodies.put(body, game.languageManager.getText("watchmaker_name"));
                 }
             }
         }
@@ -755,63 +760,63 @@ public class Chapter2Screen implements Screen {
     }
 
     private void interactWithNPC() {
-        if (currentLevel == 1 && pendingNPCName != null && pendingNPCName.equals("Выживший")) {
+        if (currentLevel == 1 && pendingNPCName != null && pendingNPCName.equals(game.languageManager.getText("survivor_name"))) {
             if (trashCollected >= totalTrash) {
                 showDialog(new String[]{
-                        "Выживший: Спасибо! Ты очистила зону от мусора!",
-                        "Выживший: Чтобы предотвратить аномалию, нужно найти временной объект.",
-                        "Выживший: Иди к выходу! Удачи!"
+                        game.languageManager.getText("survivor_dialog_3"),
+                        game.languageManager.getText("survivor_dialog_4"),
+                        game.languageManager.getText("survivor_dialog_5")
                 }, () -> {
                     exitUnlocked = true;
                     updateItemsLabel();
-                    showMessage("Выход открыт!", 1.5f);
+                    showMessage(game.languageManager.getText("exit_unlocked"), 1.5f);
                 });
             } else {
                 showDialog(new String[]{
-                        "Выживший: Помоги! Нужно собрать мусор в корзину.",
-                        "Перетащи мусор пальцем в корзину. Нужно " + totalTrash + " штук."
+                        game.languageManager.getText("survivor_dialog_1"),
+                        game.languageManager.format("survivor_dialog_2", totalTrash)
                 }, () -> startTrashMinigame());
             }
-        } else if (currentLevel == 2 && pendingNPCName != null && pendingNPCName.equals("Химик")) {
+        } else if (currentLevel == 2 && pendingNPCName != null && pendingNPCName.equals(game.languageManager.getText("chemist_name"))) {
             if (partsCollected >= 3) {
                 showDialog(new String[]{
-                        "Химик: Отлично! Все запчасти на месте!",
-                        "Химик: Временной объект, который ты ищешь - это ГИПЕРКУБ.",
-                        "Химик: Иди к выходу!"
+                        game.languageManager.getText("chemist_dialog_5"),
+                        game.languageManager.getText("chemist_dialog_6"),
+                        game.languageManager.getText("chemist_dialog_7")
                 }, () -> {
                     exitUnlocked = true;
                     updateItemsLabel();
-                    showMessage("Выход открыт!", 1.5f);
+                    showMessage(game.languageManager.getText("exit_unlocked"), 1.5f);
                 });
             } else if (talkedToChemist) {
                 showDialog(new String[]{
-                        "Химик: Нужно найти 3 запчасти. Ищи их по лаборатории."
+                        game.languageManager.getText("chemist_dialog_4")
                 }, null);
             } else {
                 showDialog(new String[]{
-                        "Химик: Эксперимент вышел из-под контроля...",
-                        "Химик: Чтобы остановить аномалию, найди 3 запчасти.",
-                        "Химик: Это ГИПЕРКУБ!"
+                        game.languageManager.getText("chemist_dialog_1"),
+                        game.languageManager.getText("chemist_dialog_2"),
+                        game.languageManager.getText("chemist_dialog_3")
                 }, () -> {
                     talkedToChemist = true;
                     updateItemsLabel();
-                    showMessage("Найди 3 запчасти на карте!", 2f);
+                    showMessage(game.languageManager.getText("find_parts_message"), 2f);
                 });
             }
-        } else if (currentLevel == 3 && pendingNPCName != null && pendingNPCName.equals("Часовщик")) {
+        } else if (currentLevel == 3 && pendingNPCName != null && pendingNPCName.equals(game.languageManager.getText("watchmaker_name"))) {
             if (shardsClicked >= totalShards) {
                 showDialog(new String[]{
-                        "Часовщик: Ты собрала все осколки времени!",
-                        "Часовщик: Гиперкуб ждет тебя. Иди к выходу."
+                        game.languageManager.getText("watchmaker_dialog_3"),
+                        game.languageManager.getText("watchmaker_dialog_4")
                 }, () -> {
                     exitUnlocked = true;
                     updateItemsLabel();
-                    showMessage("Выход открыт!", 1.5f);
+                    showMessage(game.languageManager.getText("exit_unlocked"), 1.5f);
                 });
             } else {
                 showDialog(new String[]{
-                        "Часовщик: Время искажено... Нужно собрать осколки.",
-                        "Нажми на все осколки. Их " + totalShards + " штук."
+                        game.languageManager.getText("watchmaker_dialog_1"),
+                        game.languageManager.format("watchmaker_dialog_2", totalShards)
                 }, () -> startShardMinigame());
             }
         }
@@ -837,15 +842,15 @@ public class Chapter2Screen implements Screen {
         darkBg.setColor(0, 0, 0, 0.9f);
         minigameStage.addActor(darkBg);
 
-        Label title = new Label("СОБЕРИ МУСОР", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        Label title = new Label(game.languageManager.getText("trash_minigame_title"), new Label.LabelStyle() {{ font = game.titleFont; fontColor = Color.GOLD; }});
         title.setPosition(w / 2 - 150, h - 80);
         minigameStage.addActor(title);
 
-        final Label counter = new Label("Собрано: 0/" + totalTrash, new Label.LabelStyle() {{ font = game.font; }});
+        final Label counter = new Label(game.languageManager.format("trash_minigame_counter", 0, totalTrash), new Label.LabelStyle() {{ font = game.font; }});
         counter.setPosition(20, h - 60);
         minigameStage.addActor(counter);
 
-        TextButton exitBtn = new TextButton("ВЫЙТИ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_minigame"), new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         exitBtn.setSize(100, 50);
         exitBtn.setPosition(w - 120, h - 70);
         exitBtn.addListener(new ClickListener() {
@@ -862,7 +867,7 @@ public class Chapter2Screen implements Screen {
 
         Object obj = minigameStage.getRoot().getUserObject();
         if (obj instanceof Label) {
-            ((Label) obj).setText("Собрано: " + trashCollected + "/" + totalTrash);
+            ((Label) obj).setText(game.languageManager.format("trash_minigame_counter", trashCollected, totalTrash));
         }
 
         if (Gdx.input.isTouched()) {
@@ -899,14 +904,12 @@ public class Chapter2Screen implements Screen {
                     trashCollected++;
 
                     if (trashCollected >= totalTrash) {
-                        showMinigameMessage("Поздравляю! Весь мусор собран!");
+                        showMinigameMessage(game.languageManager.getText("all_trash_collected"));
                         Timer.schedule(new Timer.Task() {
-                            @Override public void run() {
-                                exitTrashMinigame();
-                            }
+                            @Override public void run() { exitTrashMinigame(); }
                         }, 2);
                     } else {
-                        showMinigameMessage("Мусор собран! " + trashCollected + "/" + totalTrash);
+                        showMinigameMessage(game.languageManager.format("trash_collected_message", trashCollected, totalTrash));
                     }
                 }
             }
@@ -932,7 +935,7 @@ public class Chapter2Screen implements Screen {
         trashMinigame = false;
         minigameStage.clear();
         Gdx.input.setInputProcessor(uiStage);
-        if (trashCollected >= totalTrash) showMessage("Вернись к Выжившему!", 2f);
+        if (trashCollected >= totalTrash) showMessage(game.languageManager.format("return_to_npc", game.languageManager.getText("survivor_name")), 2f);
     }
 
     private void startShardMinigame() {
@@ -954,15 +957,15 @@ public class Chapter2Screen implements Screen {
         darkBg.setColor(0, 0, 0, 0.9f);
         minigameStage.addActor(darkBg);
 
-        Label title = new Label("СОБЕРИ ОСКОЛКИ", new Label.LabelStyle() {{ font = game.titleFont; fontColor = com.badlogic.gdx.graphics.Color.GOLD; }});
+        Label title = new Label(game.languageManager.getText("shard_minigame_title"), new Label.LabelStyle() {{ font = game.titleFont; fontColor = Color.GOLD; }});
         title.setPosition(w / 2 - 150, h - 80);
         minigameStage.addActor(title);
 
-        final Label counter = new Label("Собрано: 0/" + totalShards, new Label.LabelStyle() {{ font = game.font; }});
+        final Label counter = new Label(game.languageManager.format("shard_minigame_counter", 0, totalShards), new Label.LabelStyle() {{ font = game.font; }});
         counter.setPosition(20, h - 60);
         minigameStage.addActor(counter);
 
-        TextButton exitBtn = new TextButton("ВЫЙТИ", new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_minigame"), new TextButton.TextButtonStyle() {{ font = game.smallFont; }});
         exitBtn.setSize(100, 50);
         exitBtn.setPosition(w - 120, h - 70);
         exitBtn.addListener(new ClickListener() {
@@ -979,7 +982,7 @@ public class Chapter2Screen implements Screen {
 
         Object obj = minigameStage.getRoot().getUserObject();
         if (obj instanceof Label) {
-            ((Label) obj).setText("Собрано: " + shardsClicked + "/" + totalShards);
+            ((Label) obj).setText(game.languageManager.format("shard_minigame_counter", shardsClicked, totalShards));
         }
 
         if (Gdx.input.justTouched()) {
@@ -998,14 +1001,12 @@ public class Chapter2Screen implements Screen {
                     shardsClicked++;
 
                     if (shardsClicked >= totalShards) {
-                        showMinigameMessage("Поздравляю! Все осколки собраны!");
+                        showMinigameMessage(game.languageManager.getText("all_shards_collected"));
                         Timer.schedule(new Timer.Task() {
-                            @Override public void run() {
-                                exitShardMinigame();
-                            }
+                            @Override public void run() { exitShardMinigame(); }
                         }, 2);
                     } else {
-                        showMinigameMessage("Осколок собран! " + shardsClicked + "/" + totalShards);
+                        showMinigameMessage(game.languageManager.format("shard_collected_message", shardsClicked, totalShards));
                     }
                     break;
                 }
@@ -1027,11 +1028,11 @@ public class Chapter2Screen implements Screen {
         shardMinigame = false;
         minigameStage.clear();
         Gdx.input.setInputProcessor(uiStage);
-        if (shardsClicked >= totalShards) showMessage("Вернись к Часовщику!", 2f);
+        if (shardsClicked >= totalShards) showMessage(game.languageManager.format("return_to_npc", game.languageManager.getText("watchmaker_name")), 2f);
     }
 
     private void showMinigameMessage(String msg) {
-        Label label = new Label(msg, new Label.LabelStyle() {{ font = game.smallFont; fontColor = com.badlogic.gdx.graphics.Color.GREEN; }});
+        Label label = new Label(msg, new Label.LabelStyle() {{ font = game.smallFont; fontColor = Color.GREEN; }});
         label.setPosition(TheFateGame.VIRTUAL_WIDTH / 2 - 150, TheFateGame.VIRTUAL_HEIGHT / 2);
         minigameStage.addActor(label);
         Timer.schedule(new Timer.Task() { @Override public void run() { label.remove(); } }, 1.5f);
@@ -1043,8 +1044,8 @@ public class Chapter2Screen implements Screen {
             updateItemsLabel();
             bodiesToDestroy.add(body);
             itemBodies.put(body, "collected");
-            showMessage("Запчасть " + partsCollected + "/3", 1f);
-            if (partsCollected >= 3) showMessage("Все запчасти собраны! Вернись к Химику.", 2f);
+            showMessage(game.languageManager.format("part_collected", partsCollected), 1f);
+            if (partsCollected >= 3) showMessage(game.languageManager.getText("all_parts_collected"), 2f);
         }
         showInteractionBtn = false;
         interactionBtn.setVisible(false);
@@ -1063,7 +1064,7 @@ public class Chapter2Screen implements Screen {
     }
 
     private void completeGame() {
-        showMessage("ГЛАВА 2 ПРОЙДЕНА!\nЗАГРУЗКА ГЛАВЫ 3...", 3f);
+        showMessage(game.languageManager.getText("chapter2_complete"), 3f);
         game.prefs.putBoolean("chapter2_completed", true);
         game.prefs.putBoolean("chapter3_unlocked", true);
         game.prefs.flush();
@@ -1080,7 +1081,7 @@ public class Chapter2Screen implements Screen {
     private void dieAndRestart() {
         if (isDead) return;
         isDead = true;
-        showMessage("ВЫ УМЕРЛИ", 1.5f);
+        showMessage(game.languageManager.getText("you_died"), 1.5f);
         Timer.schedule(new Timer.Task() { @Override public void run() { loadLevel(currentLevel); isDead = false; } }, 1.5f);
     }
 
@@ -1100,9 +1101,9 @@ public class Chapter2Screen implements Screen {
         pauseStage.addActor(table);
         Table dialog = new Table();
         dialog.pad(30);
-        Label title = new Label("ПАУЗА", new Label.LabelStyle() {{ font = game.font; }});
+        Label title = new Label(game.languageManager.getText("game_paused"), new Label.LabelStyle() {{ font = game.font; }});
         title.setFontScale(2f);
-        TextButton continueBtn = new TextButton("ПРОДОЛЖИТЬ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton continueBtn = new TextButton(game.languageManager.getText("resume"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         continueBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 isPaused = false;
@@ -1111,7 +1112,7 @@ public class Chapter2Screen implements Screen {
                 if (game.gameMusic != null && game.musicEnabled) game.gameMusic.play();
             }
         });
-        TextButton exitBtn = new TextButton("В МЕНЮ", new TextButton.TextButtonStyle() {{ font = game.font; }});
+        TextButton exitBtn = new TextButton(game.languageManager.getText("exit_to_menu"), new TextButton.TextButtonStyle() {{ font = game.font; }});
         exitBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 game.stopGameMusic();

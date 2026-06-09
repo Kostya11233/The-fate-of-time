@@ -3,6 +3,7 @@ package com.mygdx.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -27,7 +28,6 @@ public class SettingsScreen implements Screen {
     private TextButton languageEnBtn;
     private TextButton resetBtn;
     private TextButton backBtn;
-
     private TextButton volumeMinusBtn;
     private TextButton volumePlusBtn;
     private Table volumeTable;
@@ -47,6 +47,7 @@ public class SettingsScreen implements Screen {
 
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
+        labelStyle.fontColor = Color.WHITE;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
@@ -111,8 +112,7 @@ public class SettingsScreen implements Screen {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.musicEnabled = !game.musicEnabled;
-                soundToggle.setText(game.languageManager.getText("music") + ": " +
-                        (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
+                updateSoundToggleText();
                 if (game.menuMusic != null) {
                     if (game.musicEnabled) {
                         game.menuMusic.play();
@@ -170,7 +170,7 @@ public class SettingsScreen implements Screen {
                 game.volume = 0.7f;
                 game.musicEnabled = true;
                 volumeValueLabel.setText("70%");
-                soundToggle.setText(game.languageManager.getText("music") + ": " + game.languageManager.getText("on"));
+                updateSoundToggleText();
                 if (game.menuMusic != null) {
                     game.menuMusic.setVolume(game.volume);
                     if (game.musicEnabled) {
@@ -203,11 +203,15 @@ public class SettingsScreen implements Screen {
         table.center();
     }
 
+    private void updateSoundToggleText() {
+        soundToggle.setText(game.languageManager.getText("music") + ": " +
+                (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
+    }
+
     private void refreshUI() {
         titleLabel.setText(game.languageManager.getText("settings"));
         volumeLabel.setText(game.languageManager.getText("volume") + ":");
-        soundToggle.setText(game.languageManager.getText("music") + ": " +
-                (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
+        updateSoundToggleText();
         languageLabel.setText(game.languageManager.getText("language") + ":");
         languageRuBtn.setText(game.languageManager.getText("russian"));
         languageEnBtn.setText(game.languageManager.getText("english"));

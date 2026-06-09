@@ -1,6 +1,8 @@
 package com.mygdx.game.ui;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -31,9 +33,7 @@ public class UIManager {
         float screenW = Gdx.graphics.getWidth();
         float screenH = Gdx.graphics.getHeight();
 
-        // Кнопки движения
         leftBtn = createButton("button/button_left.png", screenW / 5 - btnSize - 20, 30 + btnSize / 2, btnSize);
-        // Вместо:
         leftBtn.addListener(new ClickListener() {
             @Override public boolean touchDown(InputEvent e, float x, float y, int p, int b) {
                 if (gameScreen != null) gameScreen.getPlayer().setMovingLeft(true);
@@ -43,8 +43,6 @@ public class UIManager {
                 if (gameScreen != null) gameScreen.getPlayer().setMovingLeft(false);
             }
         });
-
-// Используйте такой синтаксис (без лямбд) - он уже правильный!
 
         rightBtn = createButton("button/button_right.png", screenW / 5 + 20, 30 + btnSize / 2, btnSize);
         rightBtn.addListener(new ClickListener() {
@@ -57,7 +55,6 @@ public class UIManager {
             }
         });
 
-        // Кнопка прыжка
         jumpBtn = createButton("button/button_jump.png", screenW - 120, 30, 100);
         jumpBtn.addListener(new ClickListener() {
             @Override
@@ -66,13 +63,11 @@ public class UIManager {
             }
         });
 
-        // Кнопка паузы
         pauseBtn = createButton("button/button_pause.png", screenW - 80, screenH - 80, 70);
         pauseBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent e, float x, float y) {
                 gameScreen.setPaused(true);
-                // Показать меню паузы
             }
         });
 
@@ -81,9 +76,9 @@ public class UIManager {
         stage.addActor(jumpBtn);
         stage.addActor(pauseBtn);
 
-        // Счетчик предметов
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = game.font;
+        labelStyle.fontColor = Color.WHITE;
         itemsLabel = new Label("", labelStyle);
         itemsLabel.setPosition(20, screenH - 50);
         stage.addActor(itemsLabel);
@@ -103,7 +98,7 @@ public class UIManager {
     }
 
     private Texture createFallbackTexture() {
-        com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(64, 64, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        Pixmap pixmap = new Pixmap(64, 64, Pixmap.Format.RGBA8888);
         pixmap.setColor(0.5f, 0.5f, 0.5f, 1);
         pixmap.fill();
         Texture tex = new Texture(pixmap);
@@ -116,20 +111,24 @@ public class UIManager {
     }
 
     public void showAllItemsCollectedMessage() {
-        // Показать сообщение о сборе всех предметов
+        showMessage(game.languageManager.getText("all_items_collected"));
+    }
+
+    private void showMessage(String message) {
+        // Реализация показа сообщения
     }
 
     public void showDeathMessage(Runnable onRestart) {
-        // Показать сообщение о смерти и перезапустить уровень
+        showMessage(game.languageManager.getText("you_died"));
         onRestart.run();
     }
 
     public void showLevelMessage(String message) {
-        // Показать сообщение об уровне
+        showMessage(message);
     }
 
     public void showToBeContinued(Runnable onFinish) {
-        // Показать "продолжение следует" и выйти
+        showMessage(game.languageManager.getText("loading"));
         onFinish.run();
     }
 

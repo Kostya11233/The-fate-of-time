@@ -3,6 +3,7 @@ package com.mygdx.game.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
@@ -27,16 +28,17 @@ public class LanguageChoiceScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.font;
+        Label.LabelStyle titleStyle = new Label.LabelStyle();
+        titleStyle.font = game.titleFont;
+        titleStyle.fontColor = Color.GOLD;
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = game.font;
 
         Table titleTable = new Table();
-        Label titleLabelRu = new Label("ВЫБЕРИТЕ ЯЗЫК", labelStyle);
+        Label titleLabelRu = new Label("ВЫБЕРИТЕ ЯЗЫК", titleStyle);
         titleLabelRu.setFontScale(1.5f);
-        Label titleLabelEn = new Label("SELECT LANGUAGE", labelStyle);
+        Label titleLabelEn = new Label("SELECT LANGUAGE", titleStyle);
         titleLabelEn.setFontScale(1.5f);
         titleTable.add(titleLabelRu).padBottom(5).row();
         titleTable.add(titleLabelEn);
