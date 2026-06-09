@@ -134,7 +134,7 @@ public class StartMenuScreen implements Screen {
         socialBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                Gdx.net.openURI("https://t.me/your_channel");
+                Gdx.net.openURI("https://t.me/diorol_cvt");
             }
         });
         stage.addActor(socialBtn);

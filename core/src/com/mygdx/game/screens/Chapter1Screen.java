@@ -24,6 +24,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -91,8 +92,8 @@ public class Chapter1Screen implements Screen {
     private Body pendingMaBody = null;
 
     // BUTTONS
-    private ImageButton jumpBtn, pauseBtn, interactionBtn, bookBtn;
-    private Texture jumpTex, pauseTex, interactionTex, bookTex;
+    private ImageButton pauseBtn, interactionBtn, bookBtn;
+    private Texture pauseTex, interactionTex, bookTex;
 
     // ITEMS & NOTES
     private Label itemsLabel;
@@ -182,8 +183,25 @@ public class Chapter1Screen implements Screen {
         }
     }
 
+    private String getNoteImagePath(String noteId) {
+        String currentLang = game.languageManager.getCurrentLanguage();
+        String imagePath = "notes/" + currentLang + "/" + noteId + ".png";
+
+        if (!Gdx.files.internal(imagePath).exists()) {
+            imagePath = "notes/ru/" + noteId + ".png";
+        }
+
+        return imagePath;
+    }
+
     private void showNoteImage(String noteId) {
-        String imagePath = noteId + ".png";
+        String imagePath = getNoteImagePath(noteId);
+
+        if (!Gdx.files.internal(imagePath).exists()) {
+            showNoteText(noteId);
+            return;
+        }
+
         try {
             if (currentImageTexture != null) {
                 currentImageTexture.dispose();
@@ -240,8 +258,57 @@ public class Chapter1Screen implements Screen {
 
         } catch (Exception e) {
             hideCurrentImage();
-            showMessage(game.languageManager.getText("failed_to_load_note"), 1.5f);
+            showNoteText(noteId);
         }
+    }
+
+    private void showNoteText(String noteId) {
+        String noteText = game.languageManager.getText("note_" + noteId);
+
+        imageStage.clear();
+        Table darkBg = new Table();
+        darkBg.setFillParent(true);
+        darkBg.setColor(0, 0, 0, 0.9f);
+        imageStage.addActor(darkBg);
+
+        Table table = new Table();
+        table.setFillParent(true);
+        imageStage.addActor(table);
+
+        Table textContainer = new Table();
+        textContainer.pad(30);
+
+        int noteNumber = Integer.parseInt(noteId.substring(1));
+        Label titleLabel = new Label(game.languageManager.getText("note_prefix") + noteNumber, new Label.LabelStyle() {{
+            font = game.titleFont;
+            fontColor = com.badlogic.gdx.graphics.Color.GOLD;
+        }});
+        textContainer.add(titleLabel).padBottom(20).row();
+
+        Label textLabel = new Label(noteText, new Label.LabelStyle() {{
+            font = game.smallFont;
+            fontColor = com.badlogic.gdx.graphics.Color.WHITE;
+        }});
+        textLabel.setWrap(true);
+        textContainer.add(textLabel).width(screenW * 0.7f).padBottom(30).row();
+
+        Label continueLabel = new Label(game.languageManager.getText("tap_to_continue"), new Label.LabelStyle() {{
+            font = game.font;
+            fontColor = com.badlogic.gdx.graphics.Color.CYAN;
+        }});
+        textContainer.add(continueLabel);
+
+        table.add(textContainer).center();
+
+        imageStage.addListener(new ClickListener() {
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+                hideCurrentImage();
+                return true;
+            }
+        });
+
+        Gdx.input.setInputProcessor(imageStage);
     }
 
     private void hideCurrentImage() {
@@ -263,6 +330,23 @@ public class Chapter1Screen implements Screen {
         currentNoteIndex = 0;
         showCurrentNote();
         Gdx.input.setInputProcessor(bookStage);
+    }
+
+    private ScrollPane createTextScrollPane(String text) {
+        Table textTable = new Table();
+        textTable.pad(20);
+
+        Label textLabel = new Label(text, new Label.LabelStyle() {{
+            font = game.smallFont;
+            fontColor = com.badlogic.gdx.graphics.Color.WHITE;
+        }});
+        textLabel.setWrap(true);
+        textTable.add(textLabel).width(screenW * 0.65f);
+
+        ScrollPane scrollPane = new ScrollPane(textTable);
+        scrollPane.setFadeScrollBars(false);
+        scrollPane.setScrollingDisabled(true, false);
+        return scrollPane;
     }
 
     private void showCurrentNote() {
@@ -290,37 +374,44 @@ public class Chapter1Screen implements Screen {
         titleLabel.setFontScale(1.3f);
         contentTable.add(titleLabel).padBottom(25).row();
 
-        try {
-            if (currentNoteTexture != null) {
-                currentNoteTexture.dispose();
+        String imagePath = getNoteImagePath(noteId);
+        boolean imageLoaded = false;
+
+        if (Gdx.files.internal(imagePath).exists()) {
+            try {
+                if (currentNoteTexture != null) {
+                    currentNoteTexture.dispose();
+                }
+                currentNoteTexture = new Texture(imagePath);
+                int originalWidth = currentNoteTexture.getWidth();
+                int originalHeight = currentNoteTexture.getHeight();
+
+                float maxWidth = screenW * 0.75f;
+                float maxHeight = screenH * 0.55f;
+
+                float scaleX = maxWidth / originalWidth;
+                float scaleY = maxHeight / originalHeight;
+                float scale = Math.min(scaleX, scaleY);
+
+                float displayWidth = originalWidth * scale;
+                float displayHeight = originalHeight * scale;
+
+                Image noteImage = new Image(currentNoteTexture);
+                noteImage.setSize(displayWidth, displayHeight);
+
+                Table imageContainer = new Table();
+                imageContainer.add(noteImage).center();
+                contentTable.add(imageContainer).center().padBottom(30);
+                imageLoaded = true;
+            } catch (Exception e) {
+                imageLoaded = false;
             }
-            currentNoteTexture = new Texture(noteId + ".png");
-            int originalWidth = currentNoteTexture.getWidth();
-            int originalHeight = currentNoteTexture.getHeight();
+        }
 
-            float maxWidth = screenW * 0.75f;
-            float maxHeight = screenH * 0.55f;
-
-            float scaleX = maxWidth / originalWidth;
-            float scaleY = maxHeight / originalHeight;
-            float scale = Math.min(scaleX, scaleY);
-
-            float displayWidth = originalWidth * scale;
-            float displayHeight = originalHeight * scale;
-
-            Image noteImage = new Image(currentNoteTexture);
-            noteImage.setSize(displayWidth, displayHeight);
-
-            Table imageContainer = new Table();
-            imageContainer.add(noteImage).center();
-            contentTable.add(imageContainer).center().padBottom(30);
-
-        } catch (Exception e) {
-            Label errorLabel = new Label(game.languageManager.getText("failed_to_load_note"), new Label.LabelStyle() {{
-                font = game.font;
-                fontColor = com.badlogic.gdx.graphics.Color.RED;
-            }});
-            contentTable.add(errorLabel).padBottom(30);
+        if (!imageLoaded) {
+            String noteText = game.languageManager.getText("note_" + noteId);
+            ScrollPane scrollPane = createTextScrollPane(noteText);
+            contentTable.add(scrollPane).width(screenW * 0.7f).height(screenH * 0.5f).padBottom(30);
         }
 
         Table navTable = new Table();
@@ -432,7 +523,6 @@ public class Chapter1Screen implements Screen {
             standRight = standLeft = new TextureRegion(fallback);
         }
 
-        jumpTex = loadTextureWithFallback("button/button_jump.png", 0.2f, 0.8f, 0.2f);
         pauseTex = loadTextureWithFallback("button/button_pause.png", 0.8f, 0.8f, 0.2f);
         interactionTex = loadTextureWithFallback("button/button_interaction.png", 0.2f, 0.8f, 0.2f);
         bookTex = loadTextureWithFallback("item/book3.png", 0.6f, 0.4f, 0.2f);
@@ -483,21 +573,7 @@ public class Chapter1Screen implements Screen {
     }
 
     private void createUI() {
-        float btnBottomY = 30 * uiScale;
-        float rightMargin = 25 * uiScale;
         float topMargin = 20 * uiScale;
-
-        jumpBtn = new ImageButton(new TextureRegionDrawable(jumpTex));
-        jumpBtn.setSize(btnSize, btnSize);
-        jumpBtn.setPosition(screenW - btnSize - rightMargin, btnBottomY);
-        jumpBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent e, float x, float y) {
-                if (!isPaused && !isTransitioning && !showingImage && !showingBook) {
-                    // В Chapter1 нет гравитации, прыжок не нужен
-                }
-            }
-        });
 
         pauseBtn = new ImageButton(new TextureRegionDrawable(pauseTex));
         pauseBtn.setSize(pauseSize, pauseSize);
@@ -559,7 +635,6 @@ public class Chapter1Screen implements Screen {
             }
         });
 
-        uiStage.addActor(jumpBtn);
         uiStage.addActor(pauseBtn);
         uiStage.addActor(bookBtn);
         uiStage.addActor(interactionBtn);
