@@ -1,4 +1,4 @@
-package com.mygdx.game.game;
+package com.thefateoftime.game;
 
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;

@@ -6,4 +6,4 @@
 
 Глава3. Элис находит временной объект, видит черную дыру вдалеке и перед ней встает выбор, от которого зависит как судьба времени, так и всей вселенной.
 
-Диск: https://disk.yandex.ru/d/FeDm54EuDPZaaA
+Rustore: https://console.rustore.ru/apps/2063721131?utm_source=chatgpt.com

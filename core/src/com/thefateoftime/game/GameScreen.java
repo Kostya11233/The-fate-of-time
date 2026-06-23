@@ -1,4 +1,4 @@
-package com.mygdx.game.game;
+package com.thefateoftime.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
@@ -10,8 +10,8 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.mygdx.game.TheFateGame;
-import com.mygdx.game.ui.UIManager;
+import com.thefateoftime.TheFateGame;
+import com.thefateoftime.ui.UIManager;
 
 public abstract class GameScreen implements Screen {
     protected final TheFateGame game;

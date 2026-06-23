@@ -1,8 +1,7 @@
-package com.mygdx.game.game;
+package com.thefateoftime.game;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
-import com.mygdx.game.TheFateGame;
+import com.thefateoftime.TheFateGame;
 
 public class GameState {
     private static GameState instance;

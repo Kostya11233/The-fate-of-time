@@ -1,4 +1,4 @@
-package com.mygdx.game.ui;
+package com.thefateoftime.ui;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -8,12 +8,11 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.mygdx.game.TheFateGame;
-import com.mygdx.game.game.GameScreen;
+import com.thefateoftime.TheFateGame;
+import com.thefateoftime.game.GameScreen;
 
 public class UIManager {
     private TheFateGame game;
@@ -104,32 +103,6 @@ public class UIManager {
         Texture tex = new Texture(pixmap);
         pixmap.dispose();
         return tex;
-    }
-
-    public void updateItemsLabel(int collected, int total) {
-        itemsLabel.setText(game.languageManager.format("items_collected", collected, total));
-    }
-
-    public void showAllItemsCollectedMessage() {
-        showMessage(game.languageManager.getText("all_items_collected"));
-    }
-
-    private void showMessage(String message) {
-        // Реализация показа сообщения
-    }
-
-    public void showDeathMessage(Runnable onRestart) {
-        showMessage(game.languageManager.getText("you_died"));
-        onRestart.run();
-    }
-
-    public void showLevelMessage(String message) {
-        showMessage(message);
-    }
-
-    public void showToBeContinued(Runnable onFinish) {
-        showMessage(game.languageManager.getText("loading"));
-        onFinish.run();
     }
 
     public void actAndDraw(float delta) {

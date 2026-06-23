@@ -1,4 +1,4 @@
-package com.mygdx.game.game;
+package com.thefateoftime.game;
 
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
@@ -7,7 +7,7 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
-import com.mygdx.game.TheFateGame;
+import com.thefateoftime.TheFateGame;
 import java.util.HashMap;
 import java.util.Map;
 
