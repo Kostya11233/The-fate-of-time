@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
-          java-version: 21
+          java-version: 17
       
       # Теперь подсказываем системе - что данные из кэша можно сохранять между сборками, чтобы ускорить их
       - name: Cache Gradle and wrapper
