@@ -16,8 +16,8 @@ public class Player {
     private boolean facingRight = true;
     private boolean movingLeft = false, movingRight = false;
     private boolean isGrounded = false;
-    private float speed = 5f;
-    private float jumpForce = 10f;
+    float speed = 5f;
+    float jumpForce = 10f;
 
     private static final float PPM = 32f;
 
@@ -47,27 +47,23 @@ public class Player {
     }
 
     private void loadAnimations() {
-        try {
-            TextureRegion[] rightFrames = new TextureRegion[4];
-            TextureRegion[] leftFrames = new TextureRegion[4];
+        TextureRegion[] rightFrames = new TextureRegion[4];
+        TextureRegion[] leftFrames = new TextureRegion[4];
 
-            for (int i = 0; i < 4; i++) {
-                Texture t = new Texture("player/step" + (i+1) + ".png");
-                rightFrames[i] = new TextureRegion(t);
-                leftFrames[i] = new TextureRegion(t);
-                leftFrames[i].flip(true, false);
-            }
-
-            walkRightAnimation = new Animation<>(0.12f, rightFrames);
-            walkLeftAnimation = new Animation<>(0.12f, leftFrames);
-
-            Texture standTex = new Texture("player/step1.png");
-            standRight = new TextureRegion(standTex);
-            standLeft = new TextureRegion(standTex);
-            standLeft.flip(true, false);
-        } catch (Exception e) {
-            // fallback
+        for (int i = 0; i < 4; i++) {
+            Texture t = new Texture("player/step" + (i+1) + ".png");
+            rightFrames[i] = new TextureRegion(t);
+            leftFrames[i] = new TextureRegion(t);
+            leftFrames[i].flip(true, false);
         }
+
+        walkRightAnimation = new Animation<>(0.12f, rightFrames);
+        walkLeftAnimation = new Animation<>(0.12f, leftFrames);
+
+        Texture standTex = new Texture("player/step1.png");
+        standRight = new TextureRegion(standTex);
+        standLeft = new TextureRegion(standTex);
+        standLeft.flip(true, false);
     }
 
     public void update(float delta) {
@@ -91,11 +87,6 @@ public class Player {
             isGrounded = false;
         }
     }
-
-    public void setGrounded(boolean grounded) {
-        this.isGrounded = grounded;
-    }
-
     public boolean canJump() {
         return isGrounded;
     }
@@ -114,14 +105,4 @@ public class Player {
     public void setMovingLeft(boolean moving) { this.movingLeft = moving; }
     public void setMovingRight(boolean moving) { this.movingRight = moving; }
     public Vector2 getPosition() { return body.getPosition(); }
-    public Body getBody() { return body; }
-    public void setTransform(float x, float y) { body.setTransform(x, y, 0); }
-
-    public void reset(Vector2 spawnPos) {
-        body.setTransform(spawnPos.x, spawnPos.y, 0);
-        body.setLinearVelocity(0, 0);
-        movingLeft = false;
-        movingRight = false;
-        isGrounded = false;
-    }
 }

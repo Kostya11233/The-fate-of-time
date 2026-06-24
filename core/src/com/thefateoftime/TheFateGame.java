@@ -5,7 +5,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -34,9 +33,7 @@ public class TheFateGame extends Game {
     public float scaleX = 1f;
     public float scaleY = 1f;
     public float uiScale = 1f;
-    public Texture fadeTexture;
 
-    private boolean isFirstLaunch;
 
     @Override
     public void create() {
@@ -54,18 +51,14 @@ public class TheFateGame extends Game {
         prefs = Gdx.app.getPreferences("TheFateGame");
         volume = prefs.getFloat("volume", 0.7f);
         musicEnabled = prefs.getBoolean("musicEnabled", true);
-        isFirstLaunch = prefs.getBoolean("firstLaunch", true);
 
-        try {
-            menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu.mp3"));
-            menuMusic.setLooping(true);
-            menuMusic.setVolume(volume);
+        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu.mp3"));
+        menuMusic.setLooping(true);
+        menuMusic.setVolume(volume);
 
-            gameMusic = Gdx.audio.newMusic(Gdx.files.internal("game.mp3"));
-            gameMusic.setLooping(true);
-            gameMusic.setVolume(volume);
-        } catch (Exception e) {}
-
+        gameMusic = Gdx.audio.newMusic(Gdx.files.internal("game.mp3"));
+        gameMusic.setLooping(true);
+        gameMusic.setVolume(volume);
         setScreen(new SplashScreen(this));
     }
 
@@ -78,26 +71,18 @@ public class TheFateGame extends Game {
         uiScale = Math.min(scaleX, scaleY);
     }
 
-    public float getUIScale() {
-        return uiScale;
-    }
-
-    public int getScaledSize(int originalSize) {
-        return Math.round(originalSize * uiScale);
-    }
-
+    public float getUIScale() {return uiScale;}
+    public int getScaledSize(int originalSize) {return Math.round(originalSize * uiScale);}
     private void loadFonts() {
         try {
             String[] fontPaths = {"font.ttf", "fonts/font.ttf", "Font.ttf", "fonts/Font.ttf"};
             FreeTypeFontGenerator generator = null;
 
             for (String path : fontPaths) {
-                try {
-                    if (Gdx.files.internal(path).exists()) {
-                        generator = new FreeTypeFontGenerator(Gdx.files.internal(path));
-                        break;
-                    }
-                } catch (Exception e) {}
+              if (Gdx.files.internal(path).exists()) {
+                  generator = new FreeTypeFontGenerator(Gdx.files.internal(path));
+                  break;
+              }
             }
 
             if (generator == null) {
@@ -156,36 +141,21 @@ public class TheFateGame extends Game {
             menuMusic.setVolume(volume);
         }
     }
-
-    public boolean isFirstLaunch() {
-        return isFirstLaunch;
-    }
-
-    public void setFirstLaunchComplete() {
-        isFirstLaunch = false;
-        prefs.putBoolean("firstLaunch", false);
-        prefs.flush();
-    }
-
     public void saveGameProgress(String currentMap, int collectedItems) {
         prefs.putString("saved_map", currentMap);
         prefs.putInteger("saved_items", collectedItems);
         prefs.putBoolean("has_save", true);
         prefs.flush();
     }
-
     public boolean hasSaveGame() {
         return prefs.getBoolean("has_save", false);
     }
-
     public String getSavedMap() {
         return prefs.getString("saved_map", "room3.tmx");
     }
-
     public int getSavedItems() {
         return prefs.getInteger("saved_items", 0);
     }
-
     public void clearSave() {
         prefs.putBoolean("has_save", false);
         prefs.putString("saved_map", "");

@@ -1,7 +1,7 @@
 package com.thefateoftime.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -15,10 +15,10 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.thefateoftime.LanguageManager;
 import com.thefateoftime.TheFateGame;
 
-public class SettingsScreen implements Screen {
+public class SettingsScreen extends ScreenAdapter {
     private final TheFateGame game;
     private final StartMenuScreen menuScreen;
-    private Stage stage;
+    private final Stage stage;
 
     private Label titleLabel;
     private Label volumeLabel;
@@ -28,9 +28,6 @@ public class SettingsScreen implements Screen {
     private TextButton languageEnBtn;
     private TextButton resetBtn;
     private TextButton backBtn;
-    private TextButton volumeMinusBtn;
-    private TextButton volumePlusBtn;
-    private Table volumeTable;
     private Label volumeValueLabel;
 
     public SettingsScreen(TheFateGame game, StartMenuScreen menuScreen) {
@@ -62,7 +59,7 @@ public class SettingsScreen implements Screen {
         volumeValueLabel = new Label(currentVolume + "%", labelStyle);
         volumeValueLabel.setFontScale(1.5f);
 
-        volumeMinusBtn = new TextButton("-", buttonStyle);
+        TextButton volumeMinusBtn = new TextButton("-", buttonStyle);
         volumeMinusBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -71,17 +68,17 @@ public class SettingsScreen implements Screen {
                 int newVolume = Math.max(0, current - 10);
                 game.volume = newVolume / 100f;
                 volumeValueLabel.setText(newVolume + "%");
-                if (game.menuMusic != null && game.musicEnabled) {
+                if (game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
-                if (game.gameMusic != null && game.musicEnabled) {
+                if (game.musicEnabled) {
                     game.gameMusic.setVolume(game.volume);
                 }
                 game.saveSettings();
             }
         });
 
-        volumePlusBtn = new TextButton("+", buttonStyle);
+        TextButton volumePlusBtn = new TextButton("+", buttonStyle);
         volumePlusBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -90,44 +87,39 @@ public class SettingsScreen implements Screen {
                 int newVolume = Math.min(100, current + 10);
                 game.volume = newVolume / 100f;
                 volumeValueLabel.setText(newVolume + "%");
-                if (game.menuMusic != null && game.musicEnabled) {
+                if (game.musicEnabled) {
                     game.menuMusic.setVolume(game.volume);
                 }
-                if (game.gameMusic != null && game.musicEnabled) {
+                if (game.musicEnabled) {
                     game.gameMusic.setVolume(game.volume);
                 }
                 game.saveSettings();
             }
         });
 
-        volumeTable = new Table();
+        Table volumeTable = new Table();
         volumeTable.add(volumeMinusBtn).width(60).height(50).padRight(30);
         volumeTable.add(volumeValueLabel).padRight(30);
         volumeTable.add(volumePlusBtn).width(60).height(50);
 
-        String soundText = game.languageManager.getText("music") + ": " +
-                (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off"));
+        String soundText = game.languageManager.getText("music") + ": " + (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off"));
         soundToggle = new TextButton(soundText, buttonStyle);
         soundToggle.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.musicEnabled = !game.musicEnabled;
                 updateSoundToggleText();
-                if (game.menuMusic != null) {
-                    if (game.musicEnabled) {
-                        game.menuMusic.play();
-                        game.menuMusic.setVolume(game.volume);
-                    } else {
-                        game.menuMusic.pause();
-                    }
+                if (game.musicEnabled) {
+                    game.menuMusic.play();
+                    game.menuMusic.setVolume(game.volume);
+                } else {
+                    game.menuMusic.pause();
                 }
-                if (game.gameMusic != null) {
-                    if (game.musicEnabled) {
-                        game.gameMusic.play();
-                        game.gameMusic.setVolume(game.volume);
-                    } else {
-                        game.gameMusic.pause();
-                    }
+                if (game.musicEnabled) {
+                    game.gameMusic.play();
+                    game.gameMusic.setVolume(game.volume);
+                } else {
+                    game.gameMusic.pause();
                 }
                 game.saveSettings();
             }
@@ -141,9 +133,7 @@ public class SettingsScreen implements Screen {
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.languageManager.setLanguage(LanguageManager.RUSSIAN);
                 refreshUI();
-                if (menuScreen != null) {
-                    menuScreen.refreshButtonTexts();
-                }
+                menuScreen.refreshButtonTexts();
             }
         });
 
@@ -153,9 +143,7 @@ public class SettingsScreen implements Screen {
             public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 game.languageManager.setLanguage(LanguageManager.ENGLISH);
                 refreshUI();
-                if (menuScreen != null) {
-                    menuScreen.refreshButtonTexts();
-                }
+                menuScreen.refreshButtonTexts();
             }
         });
 
@@ -171,15 +159,11 @@ public class SettingsScreen implements Screen {
                 game.musicEnabled = true;
                 volumeValueLabel.setText("70%");
                 updateSoundToggleText();
-                if (game.menuMusic != null) {
-                    game.menuMusic.setVolume(game.volume);
-                    if (game.musicEnabled) {
-                        game.menuMusic.play();
-                    }
+                game.menuMusic.setVolume(game.volume);
+                if (game.musicEnabled) {
+                    game.menuMusic.play();
                 }
-                if (game.gameMusic != null) {
-                    game.gameMusic.setVolume(game.volume);
-                }
+                game.gameMusic.setVolume(game.volume);
                 game.saveSettings();
             }
         });
@@ -204,8 +188,7 @@ public class SettingsScreen implements Screen {
     }
 
     private void updateSoundToggleText() {
-        soundToggle.setText(game.languageManager.getText("music") + ": " +
-                (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
+        soundToggle.setText(game.languageManager.getText("music") + ": " + (game.musicEnabled ? game.languageManager.getText("on") : game.languageManager.getText("off")));
     }
 
     private void refreshUI() {
@@ -238,15 +221,7 @@ public class SettingsScreen implements Screen {
     }
 
     @Override
-    public void hide() {
-        Gdx.input.setInputProcessor(null);
-    }
-
-    @Override
     public void dispose() {
         stage.dispose();
     }
-
-    @Override public void pause() {}
-    @Override public void resume() {}
 }

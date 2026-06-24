@@ -1,7 +1,7 @@
 package com.thefateoftime.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
@@ -15,9 +15,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.thefateoftime.TheFateGame;
 
-public class StartMenuScreen implements Screen {
+public class StartMenuScreen extends ScreenAdapter {
     private final TheFateGame game;
-    private Stage stage;
+    private final Stage stage;
     private Texture buttonTexture;
     private Texture backgroundTexture;
     private TextButton continueBtn;
@@ -26,7 +26,7 @@ public class StartMenuScreen implements Screen {
     private TextButton socialBtn;
     private TextButton exitBtn;
     private TextButton.TextButtonStyle buttonStyle;
-    private GlyphLayout glyphLayout;
+    private final GlyphLayout glyphLayout;
 
     private float uiScale;
     private float btnWidth;
@@ -50,21 +50,8 @@ public class StartMenuScreen implements Screen {
     }
 
     private void loadTextures() {
-        try {
-            buttonTexture = new Texture("button.png");
-        } catch (Exception e) {
-            com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
-            pixmap.setColor(0.3f, 0.3f, 0.5f, 1);
-            pixmap.fill();
-            buttonTexture = new Texture(pixmap);
-            pixmap.dispose();
-        }
-
-        try {
-            backgroundTexture = new Texture("back.png");
-        } catch (Exception e) {
-            backgroundTexture = null;
-        }
+        buttonTexture = new Texture("button.png");
+        backgroundTexture = new Texture("back.png");
     }
 
     private void createStyles() {
@@ -104,16 +91,13 @@ public class StartMenuScreen implements Screen {
             });
             stage.addActor(continueBtn);
         }
-
         float newGameY = game.hasSaveGame() ? startY - stepY : startY;
         newGameBtn = new TextButton(game.languageManager.getText("new_game"), buttonStyle);
         newGameBtn.setSize(btnWidth, btnHeight);
         newGameBtn.setPosition(centerX, newGameY);
         newGameBtn.addListener(new ClickListener() {
             @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new ChapterSelectScreen(game));
-            }
+            public void clicked(InputEvent event, float x, float y) {game.setScreen(new ChapterSelectScreen(game));}
         });
         stage.addActor(newGameBtn);
 
@@ -122,9 +106,7 @@ public class StartMenuScreen implements Screen {
         settingsBtn.setPosition(centerX, newGameY - stepY);
         settingsBtn.addListener(new ClickListener() {
             @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new SettingsScreen(game, StartMenuScreen.this));
-            }
+            public void clicked(InputEvent event, float x, float y) {game.setScreen(new SettingsScreen(game, StartMenuScreen.this));}
         });
         stage.addActor(settingsBtn);
 
@@ -133,9 +115,7 @@ public class StartMenuScreen implements Screen {
         socialBtn.setPosition(centerX, newGameY - stepY * 2);
         socialBtn.addListener(new ClickListener() {
             @Override
-            public void clicked(InputEvent event, float x, float y) {
-                Gdx.net.openURI("https://t.me/diorol_cvt");
-            }
+            public void clicked(InputEvent event, float x, float y) {Gdx.net.openURI("https://t.me/diorol_cvt");}
         });
         stage.addActor(socialBtn);
 
@@ -144,9 +124,7 @@ public class StartMenuScreen implements Screen {
         exitBtn.setPosition(centerX, newGameY - stepY * 3);
         exitBtn.addListener(new ClickListener() {
             @Override
-            public void clicked(InputEvent event, float x, float y) {
-                Gdx.app.exit();
-            }
+            public void clicked(InputEvent event, float x, float y) {Gdx.app.exit();}
         });
         stage.addActor(exitBtn);
 
@@ -159,11 +137,11 @@ public class StartMenuScreen implements Screen {
     }
 
     public void refreshButtonTexts() {
-        if (continueBtn != null) continueBtn.setText(game.languageManager.getText("continue"));
-        if (newGameBtn != null) newGameBtn.setText(game.languageManager.getText("new_game"));
-        if (settingsBtn != null) settingsBtn.setText(game.languageManager.getText("settings"));
-        if (socialBtn != null) socialBtn.setText(game.languageManager.getText("social"));
-        if (exitBtn != null) exitBtn.setText(game.languageManager.getText("exit"));
+        continueBtn.setText(game.languageManager.getText("continue"));
+        newGameBtn.setText(game.languageManager.getText("new_game"));
+        settingsBtn.setText(game.languageManager.getText("settings"));
+        socialBtn.setText(game.languageManager.getText("social"));
+        exitBtn.setText(game.languageManager.getText("exit"));
     }
 
     @Override
@@ -172,11 +150,7 @@ public class StartMenuScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         game.batch.begin();
-
-        if (backgroundTexture != null) {
-            game.batch.draw(backgroundTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
-        }
-
+        game.batch.draw(backgroundTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
         game.batch.end();
 
         game.camera.update();
@@ -213,7 +187,6 @@ public class StartMenuScreen implements Screen {
     public void resize(int width, int height) {
         game.viewport.update(width, height, true);
         stage.getViewport().update(width, height, true);
-
         uiScale = game.getUIScale();
         btnWidth = 320f * uiScale;
         btnHeight = 70f * uiScale;
@@ -226,8 +199,8 @@ public class StartMenuScreen implements Screen {
     @Override
     public void dispose() {
         stage.dispose();
-        if (buttonTexture != null) buttonTexture.dispose();
-        if (backgroundTexture != null) backgroundTexture.dispose();
+        buttonTexture.dispose();
+        backgroundTexture.dispose();
     }
 
     @Override
@@ -242,7 +215,4 @@ public class StartMenuScreen implements Screen {
     public void hide() {
         game.stopMenuMusic();
     }
-
-    @Override public void pause() {}
-    @Override public void resume() {}
 }

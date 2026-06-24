@@ -9,7 +9,7 @@ public class LanguageManager {
     private static LanguageManager instance;
     private String currentLanguage;
     private Map<String, Map<String, String>> translations;
-    private Preferences prefs;
+    private final Preferences prefs;
 
     public static final String RUSSIAN = "ru";
     public static final String ENGLISH = "en";

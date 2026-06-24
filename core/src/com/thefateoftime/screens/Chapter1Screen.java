@@ -1,7 +1,7 @@
 package com.thefateoftime.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -32,10 +32,10 @@ import com.thefateoftime.TheFateGame;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Chapter1Screen implements Screen {
+public class Chapter1Screen extends ScreenAdapter {
     private final TheFateGame game;
-    private SpriteBatch batch;
-    private OrthographicCamera camera;
+    private final SpriteBatch batch;
+    private final OrthographicCamera camera;
     private TiledMap tiledMap;
     private OrthogonalTiledMapRenderer tiledMapRenderer;
     private World world;
@@ -44,21 +44,15 @@ public class Chapter1Screen implements Screen {
     private static final float GRAVITY = 0f;
 
     private Body playerBody;
-    private TextureRegion[] walkRightFrames;
-    private TextureRegion[] walkLeftFrames;
     private TextureRegion standRight, standLeft;
     private Animation<TextureRegion> walkRightAnimation;
     private Animation<TextureRegion> walkLeftAnimation;
     private float stateTime;
     private boolean facingRight = true;
-    private float speed = 5f;
     private String currentMap;
     private boolean isTransitioning = false;
     private String returnDoorId = null;
-    private String startMap;
-    private String startSpawnId;
-
-    // JOYSTICK
+    private String startSpawnId = null;
     private Texture joystickBaseTexture;
     private Texture joystickKnobTexture;
     private Vector2 joystickBasePos;
@@ -69,8 +63,6 @@ public class Chapter1Screen implements Screen {
     private int joystickPointer = -1;
     private Vector2 joystickDirection = new Vector2(0, 0);
     private float screenW, screenH;
-
-    // UI STAGES
     private Stage uiStage;
     private Stage pauseStage;
     private Stage messageStage;
@@ -118,7 +110,6 @@ public class Chapter1Screen implements Screen {
 
     public Chapter1Screen(TheFateGame game, String startMap, String startSpawnId) {
         this.game = game;
-        this.startMap = startMap;
         this.startSpawnId = startSpawnId;
         this.currentMap = startMap;
         this.batch = game.batch;
@@ -502,8 +493,8 @@ public class Chapter1Screen implements Screen {
             standRight = new TextureRegion(standTex);
             standLeft = new TextureRegion(standTex);
             standLeft.flip(true, false);
-            walkRightFrames = new TextureRegion[4];
-            walkLeftFrames = new TextureRegion[4];
+            TextureRegion[] walkRightFrames = new TextureRegion[4];
+            TextureRegion[] walkLeftFrames = new TextureRegion[4];
             for (int i = 0; i < 4; i++) {
                 Texture t = new Texture("player/step" + (i+1) + ".png");
                 walkRightFrames[i] = new TextureRegion(t);
@@ -1275,6 +1266,7 @@ public class Chapter1Screen implements Screen {
 
         updateJoystick();
 
+        float speed = 5f;
         float velX = joystickDirection.x * speed;
         float velY = joystickDirection.y * speed;
 
@@ -1427,7 +1419,7 @@ public class Chapter1Screen implements Screen {
         if (joystickKnobTexture != null) joystickKnobTexture.dispose();
         if (world != null) world.dispose();
         if (tiledMap != null) tiledMap.dispose();
-        if (tiledMapRenderer != null) tiledMapRenderer.dispose();
+        tiledMapRenderer.dispose();
     }
 
     @Override public void pause() {}

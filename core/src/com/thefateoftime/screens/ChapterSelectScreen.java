@@ -1,7 +1,7 @@
 package com.thefateoftime.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -13,9 +13,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.thefateoftime.TheFateGame;
 
-public class ChapterSelectScreen implements Screen {
+public class ChapterSelectScreen extends ScreenAdapter {
     private final TheFateGame game;
-    private Stage stage;
+    private final Stage stage;
     private boolean chapter2Unlocked;
     private boolean chapter3Unlocked;
 
@@ -128,17 +128,8 @@ public class ChapterSelectScreen implements Screen {
         Gdx.input.setInputProcessor(stage);
         refreshUI();
     }
-
-    @Override
-    public void hide() {
-        Gdx.input.setInputProcessor(null);
-    }
-
     @Override
     public void dispose() {
         stage.dispose();
     }
-
-    @Override public void pause() {}
-    @Override public void resume() {}
 }

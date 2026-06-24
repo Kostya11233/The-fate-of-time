@@ -1,7 +1,7 @@
 package com.thefateoftime.screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -13,16 +13,14 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.thefateoftime.LanguageManager;
 import com.thefateoftime.TheFateGame;
 
-public class LanguageChoiceScreen implements Screen {
+public class LanguageChoiceScreen extends ScreenAdapter {
     private final TheFateGame game;
-    private Stage stage;
-
+    private final Stage stage;
     public LanguageChoiceScreen(TheFateGame game) {
         this.game = game;
         this.stage = new Stage(new ExtendViewport(1280, 720));
         createUI();
     }
-
     private void createUI() {
         Table table = new Table();
         table.setFillParent(true);
@@ -97,7 +95,4 @@ public class LanguageChoiceScreen implements Screen {
     public void dispose() {
         stage.dispose();
     }
-
-    @Override public void pause() {}
-    @Override public void resume() {}
 }
