@@ -25,7 +25,7 @@ jobs:
       SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
       SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
       SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-      STORE_NAME: "keystore.jks"
+      STORE_NAME: "key_thefate.jks"
 
     # Последовательные шаги для выполнения задачи
     steps:
