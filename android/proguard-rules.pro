@@ -36,3 +36,9 @@
    boolean reportFixture(long);
    float   reportRayFixture(long, float, float, float, float, float);
 }
+-keep class com.badlogic.gdx.utils.Pool** { *; }
+-keep class com.badlogic.gdx.utils.ReflectionPool { *; }
+-keepclassmembers class * {
+    @com.badlogic.gdx.utils.Null *;
+    public <init>();
+}

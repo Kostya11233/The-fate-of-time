@@ -50,8 +50,25 @@ public class StartMenuScreen extends ScreenAdapter {
     }
 
     private void loadTextures() {
-        buttonTexture = new Texture("button.png");
-        backgroundTexture = new Texture("back.png");
+        try {
+            buttonTexture = new Texture("button.png");
+        } catch (Exception e) {
+            buttonTexture = createFallbackTexture(0.3f, 0.3f, 0.5f);
+        }
+        try {
+            backgroundTexture = new Texture("back.png");
+        } catch (Exception e) {
+            backgroundTexture = createFallbackTexture(0.05f, 0.05f, 0.15f);
+        }
+    }
+
+    private Texture createFallbackTexture(float r, float g, float b) {
+        com.badlogic.gdx.graphics.Pixmap pixmap = new com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        pixmap.setColor(r, g, b, 1);
+        pixmap.fill();
+        Texture tex = new Texture(pixmap);
+        pixmap.dispose();
+        return tex;
     }
 
     private void createStyles() {
@@ -137,7 +154,7 @@ public class StartMenuScreen extends ScreenAdapter {
     }
 
     public void refreshButtonTexts() {
-        continueBtn.setText(game.languageManager.getText("continue"));
+        if (continueBtn != null) continueBtn.setText(game.languageManager.getText("continue"));
         newGameBtn.setText(game.languageManager.getText("new_game"));
         settingsBtn.setText(game.languageManager.getText("settings"));
         socialBtn.setText(game.languageManager.getText("social"));
@@ -149,14 +166,13 @@ public class StartMenuScreen extends ScreenAdapter {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        game.batch.begin();
-        game.batch.draw(backgroundTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
-        game.batch.end();
-
+        // ОБНОВЛЯЕМ КАМЕРУ перед рисованием!
         game.camera.update();
         game.batch.setProjectionMatrix(game.camera.combined);
 
         game.batch.begin();
+        // Рисуем фон
+        game.batch.draw(backgroundTexture, 0, 0, TheFateGame.VIRTUAL_WIDTH, TheFateGame.VIRTUAL_HEIGHT);
         drawTitle();
         game.batch.end();
 
@@ -186,6 +202,8 @@ public class StartMenuScreen extends ScreenAdapter {
     @Override
     public void resize(int width, int height) {
         game.viewport.update(width, height, true);
+        game.camera.position.set(TheFateGame.VIRTUAL_WIDTH / 2f, TheFateGame.VIRTUAL_HEIGHT / 2f, 0);
+        game.camera.update(); // ВАЖНО!
         stage.getViewport().update(width, height, true);
         uiScale = game.getUIScale();
         btnWidth = 320f * uiScale;
@@ -209,6 +227,10 @@ public class StartMenuScreen extends ScreenAdapter {
         refreshButtonTexts();
         game.stopGameMusic();
         game.startMenuMusic();
+
+        // Обновляем камеру при показе
+        game.camera.update();
+        game.batch.setProjectionMatrix(game.camera.combined);
     }
 
     @Override
