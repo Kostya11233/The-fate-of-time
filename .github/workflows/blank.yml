@@ -21,11 +21,11 @@ jobs:
     
     # Задаём глобальные переменные, которые нам нужны из секретов или просто название файлов
     env:
-      ENCODED_STRING: ${{ secrets.SIGNING_KEY_STORE }}
+      ENCODED_STRING: ${{ secrets.SIGNING_STORE_BASE64 }}
       SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
       SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
       SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-      STORE_NAME: "key_thefate.jks"
+      STORE_NAME: "key.jks"
 
     # Последовательные шаги для выполнения задачи
     steps:
