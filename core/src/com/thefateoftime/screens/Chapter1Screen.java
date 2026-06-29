@@ -971,6 +971,7 @@ public class Chapter1Screen extends ScreenAdapter {
         saveProgress();
     }
 
+    // ИЗМЕНЕННЫЙ МЕТОД - добавлено сообщение "Собрано"
     private void collectNote(CollectibleObject note) {
         String noteId = note.getId();
         fateGame.prefs.putBoolean("note_z" + Integer.parseInt(noteId.substring(1)), true);
@@ -979,6 +980,9 @@ public class Chapter1Screen extends ScreenAdapter {
         saveNote(noteId);
         targetMusicVolume = 0.4f;
         showNoteImage(noteId);
+
+        // Показываем сообщение "Собрано" на текущем языке
+        showMessage(fateGame.languageManager.getText("note_collected"), 1.5f);
     }
 
     // ============================================================

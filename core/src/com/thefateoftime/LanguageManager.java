@@ -195,6 +195,7 @@ public class LanguageManager {
         ru.put("survivor_name", "✧ ВЫЖИВШИЙ ✧");                 en.put("survivor_name", "✧ SURVIVOR ✧");
         ru.put("chemist_name", "✧ ХИМИК ✧");                     en.put("chemist_name", "✧ CHEMIST ✧");
         ru.put("watchmaker_name", "✧ ЧАСОВЩИК ✧");               en.put("watchmaker_name", "✧ WATCHMAKER ✧");
+        ru.put("note_collected", "Собрано");                      en.put("note_collected", "Collected");
 
         translations.put(RUSSIAN, ru);
         translations.put(ENGLISH, en);

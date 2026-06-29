@@ -131,14 +131,18 @@ public class Chapter2Screen implements Screen {
     private float playerSize = 90f;
     private float playerRadius = 0.45f;
 
+    // КОНСТАНТЫ ДЛЯ UI
+    private static final float UI_MARGIN = 20f;
+    private static final float BTN_SPACING = 15f;
+
     public Chapter2Screen(TheFateGame game) {
         this.game = game;
         this.batch = game.batch;
         this.camera = new OrthographicCamera();
 
         this.uiScale = game.getUIScale();
-        this.btnSize = game.getScaledSize(100);
-        this.pauseSize = game.getScaledSize(70);
+        this.btnSize = game.getScaledSize(90);
+        this.pauseSize = game.getScaledSize(65);
 
         float worldWidth = TheFateGame.VIRTUAL_WIDTH / ZOOM;
         float worldHeight = TheFateGame.VIRTUAL_HEIGHT / ZOOM;
@@ -216,19 +220,24 @@ public class Chapter2Screen implements Screen {
     }
 
     private void createUI() {
+        uiStage.clear();
+
         float screenW = TheFateGame.VIRTUAL_WIDTH;
         float screenH = TheFateGame.VIRTUAL_HEIGHT;
-        float btnMargin = 25 * uiScale;
-        float btnBottomY = 35 * uiScale;
 
-        float btnAreaCenter = screenW / 4.5f;
+        // === НИЖНИЙ РЯД: КНОПКИ ДВИЖЕНИЯ ===
+        float bottomY = 40f * uiScale;
+        float leftBtnX = 40f * uiScale;
+        float rightBtnX = leftBtnX + btnSize + BTN_SPACING;
 
-        leftBtn = createMoveButton(leftTex, btnAreaCenter - btnSize - btnMargin, btnBottomY + btnSize/2, () -> movingLeft = true, () -> movingLeft = false);
-        rightBtn = createMoveButton(rightTex, btnAreaCenter + btnMargin, btnBottomY + btnSize/2, () -> movingRight = true, () -> movingRight = false);
+        leftBtn = createMoveButton(leftTex, leftBtnX, bottomY, () -> movingLeft = true, () -> movingLeft = false);
+        rightBtn = createMoveButton(rightTex, rightBtnX, bottomY, () -> movingRight = true, () -> movingRight = false);
 
+        // === ПРЫЖОК (ПРАВЫЙ НИЖНИЙ УГОЛ) ===
+        float jumpBtnX = screenW - btnSize - 40f * uiScale;
         jumpBtn = new ImageButton(new TextureRegionDrawable(jumpTex));
         jumpBtn.setSize(btnSize, btnSize);
-        jumpBtn.setPosition(screenW - btnSize - 25 * uiScale, btnBottomY);
+        jumpBtn.setPosition(jumpBtnX, bottomY);
         jumpBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 if (!isPaused && !isTransitioning && !isDead && !showingDialog && !trashMinigame && !shardMinigame && isGrounded) {
@@ -238,9 +247,12 @@ public class Chapter2Screen implements Screen {
             }
         });
 
+        // === КНОПКА ПАУЗЫ (ВЕРХНИЙ ПРАВЫЙ УГОЛ) ===
+        float pauseBtnX = screenW - pauseSize - 25f * uiScale;
+        float pauseBtnY = screenH - pauseSize - 25f * uiScale;
         pauseBtn = new ImageButton(new TextureRegionDrawable(pauseTex));
         pauseBtn.setSize(pauseSize, pauseSize);
-        pauseBtn.setPosition(screenW - pauseSize - 20 * uiScale, screenH - pauseSize - 20 * uiScale);
+        pauseBtn.setPosition(pauseBtnX, pauseBtnY);
         pauseBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 if (!showingDialog && !trashMinigame && !shardMinigame) {
@@ -252,18 +264,25 @@ public class Chapter2Screen implements Screen {
             }
         });
 
+        // === КНОПКА ЗАДАНИЙ (ВЕРХНИЙ ЛЕВЫЙ УГОЛ) ===
+        float questBtnX = 25f * uiScale;
+        float questBtnY = screenH - pauseSize - 25f * uiScale;
         questBtn = new ImageButton(new TextureRegionDrawable(questTex));
         questBtn.setSize(pauseSize, pauseSize);
-        questBtn.setPosition(20 * uiScale, screenH - pauseSize - 20 * uiScale);
+        questBtn.setPosition(questBtnX, questBtnY);
         questBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
                 if (!showingDialog && !trashMinigame && !shardMinigame) showQuestPanel();
             }
         });
 
+        // === КНОПКА ВЗАИМОДЕЙСТВИЯ (ЦЕНТР ЭКРАНА) ===
+        int interactionSize = game.getScaledSize(80);
+        float interX = screenW / 2 - interactionSize / 2f;
+        float interY = screenH / 2 - interactionSize / 2f;
         interactionBtn = new ImageButton(new TextureRegionDrawable(interactionTex));
-        interactionBtn.setSize(game.getScaledSize(90), game.getScaledSize(90));
-        interactionBtn.setPosition(screenW / 2 - game.getScaledSize(45), screenH / 2 - game.getScaledSize(60));
+        interactionBtn.setSize(interactionSize, interactionSize);
+        interactionBtn.setPosition(interX, interY);
         interactionBtn.setVisible(false);
         interactionBtn.addListener(new ClickListener() {
             @Override public void clicked(InputEvent e, float x, float y) {
@@ -277,19 +296,24 @@ public class Chapter2Screen implements Screen {
             }
         });
 
+        // === ЛЕЙБЛ СЧЕТЧИКА (ВЕРХНИЙ ЦЕНТР) ===
+        Label.LabelStyle labelStyle = new Label.LabelStyle();
+        labelStyle.font = game.smallFont;
+        itemsLabel = new Label("", labelStyle);
+        itemsLabel.setFontScale(1.2f);
+        float labelX = screenW / 2 - 100f;
+        float labelY = screenH - 45f * uiScale;
+        itemsLabel.setPosition(labelX, labelY);
+        updateItemsLabel();
+
+        // === ДОБАВЛЯЕМ ВСЕ АКТОРЫ ===
         uiStage.addActor(leftBtn);
         uiStage.addActor(rightBtn);
         uiStage.addActor(jumpBtn);
         uiStage.addActor(pauseBtn);
         uiStage.addActor(questBtn);
         uiStage.addActor(interactionBtn);
-
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = game.smallFont;
-        itemsLabel = new Label("", labelStyle);
-        itemsLabel.setPosition(80 * uiScale, screenH - 50 * uiScale);
         uiStage.addActor(itemsLabel);
-        updateItemsLabel();
     }
 
     private ImageButton createMoveButton(Texture tex, float x, float y, Runnable onDown, Runnable onUp) {
@@ -307,7 +331,13 @@ public class Chapter2Screen implements Screen {
     }
 
     private void updateItemsLabel() {
-        itemsLabel.setText("");
+        String text = "";
+        if (currentLevel == 2 && partsCollected > 0) {
+            text = game.languageManager.format("parts_collected", partsCollected);
+        } else if (currentLevel == 3 && shardsClicked > 0) {
+            text = game.languageManager.format("shards_collected", shardsClicked);
+        }
+        itemsLabel.setText(text);
     }
 
     private void showQuestPanel() {
@@ -1216,9 +1246,8 @@ public class Chapter2Screen implements Screen {
         questStage.getViewport().update(w, h, true);
         minigameStage.getViewport().update(w, h, true);
         uiScale = game.getUIScale();
-        btnSize = game.getScaledSize(100);
-        pauseSize = game.getScaledSize(70);
-        uiStage.clear();
+        btnSize = game.getScaledSize(90);
+        pauseSize = game.getScaledSize(65);
         createUI();
     }
 

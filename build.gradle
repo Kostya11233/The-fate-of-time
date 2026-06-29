@@ -14,7 +14,7 @@ buildscript {
 allprojects {
     apply plugin: "eclipse"
 
-    version = '1.0'
+    version = '1.1'
     ext {
         appName = "The Fate Of Time"
         gdxVersion = '1.12.1'
